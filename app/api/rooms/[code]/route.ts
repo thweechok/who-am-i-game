@@ -4,9 +4,15 @@ import { toPublic } from "@/lib/game";
 
 export const dynamic = "force-dynamic";
 
-/** GET /api/rooms/[code]?playerId=...&v=<version>
- *  Returns public room state with own answer hidden.
- *  Supports conditional polling: if client's v matches, return 304. */
+/**
+ * GET /api/rooms/[code]?playerId=...&v=<version>
+ *
+ * Conditional polling: returns 304 when state hasn't changed since the
+ * client's version. One Upstash GET per request — no server-side busy wait,
+ * which is the cheapest model for serverless.
+ *
+ * Client controls frequency via lib/useRoom.ts (adaptive polling).
+ */
 export async function GET(
   request: NextRequest,
   ctx: RouteContext<"/api/rooms/[code]">
