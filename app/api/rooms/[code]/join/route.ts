@@ -1,0 +1,41 @@
+import { NextRequest } from "next/server";
+import { getRoom, saveRoom } from "@/lib/redis";
+import { addPlayer, newPlayer } from "@/lib/game";
+
+export const dynamic = "force-dynamic";
+
+/** POST /api/rooms/[code]/join { name } -> { playerId } */
+export async function POST(
+  request: NextRequest,
+  ctx: RouteContext<"/api/rooms/[code]">
+) {
+  const { code } = await ctx.params;
+  let body: { name?: string } = {};
+  try {
+    body = await request.json();
+  } catch {
+    /* empty */
+  }
+
+  const name = (body.name ?? "").toString().trim();
+  if (!name) return Response.json({ error: "ต้องใส่ชื่อ" }, { status: 400 });
+
+  const room = await getRoom(code);
+  if (!room) return Response.json({ error: "ไม่พบห้อง" }, { status: 404 });
+
+  // Reconnect by name: if a player with same name exists in lobby, reuse id
+  const existing = room.players.find(
+    (p) => p.name.toLowerCase() === name.toLowerCase()
+  );
+  if (existing) {
+    return Response.json({ playerId: existing.id, reconnected: true });
+  }
+
+  const player = newPlayer(name);
+  const result = addPlayer(room, player);
+  if (!result.ok) {
+    return Response.json({ error: result.error }, { status: 400 });
+  }
+  await saveRoom(room);
+  return Response.json({ playerId: player.id });
+}
