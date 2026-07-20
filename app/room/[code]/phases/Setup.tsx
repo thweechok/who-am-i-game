@@ -2,35 +2,55 @@
 
 import { useState } from "react";
 import type { PublicRoomState } from "@/lib/types";
-import type { Difficulty } from "@/lib/openai";
 import { setupManual, setupAI, startGame } from "@/lib/api-client";
 
-// ─── Preset topic categories ───────────────────────────────────────────────
+type Difficulty = "easy" | "medium" | "hard";
+
+// ─── Preset topic categories ─────────────────────────────────────────────────
 const TOPIC_PRESETS = [
-  { emoji: "🎬", label: "ดาราฮอลลีวูด",    value: "ดาราฮอลลีวูด" },
-  { emoji: "🎵", label: "ศิลปิน/นักร้อง",  value: "ศิลปิน นักร้อง" },
-  { emoji: "🎭", label: "ดาราไทย",          value: "ดาราไทย" },
-  { emoji: "📺", label: "ซีรีส์เกาหลี",    value: "ดาราเกาหลี K-drama" },
-  { emoji: "🦸", label: "มาร์เวล/DC",      value: "ซุปเปอร์ฮีโร่ มาร์เวล DC" },
-  { emoji: "⛩️", label: "อนิเมะ",           value: "ตัวละครอนิเมะ" },
-  { emoji: "🐭", label: "ดิสนีย์",          value: "ตัวละครดิสนีย์" },
-  { emoji: "👾", label: "ตัวละครเกม",       value: "ตัวละครในวิดีโอเกม" },
-  { emoji: "🔬", label: "นักวิทยาศาสตร์",  value: "นักวิทยาศาสตร์ผู้ยิ่งใหญ่" },
-  { emoji: "👑", label: "ผู้นำโลก",         value: "ผู้นำประเทศ ประธานาธิบดี" },
-  { emoji: "⚔️", label: "บุคคลไทย",        value: "บุคคลประวัติศาสตร์ไทย" },
-  { emoji: "🌍", label: "ประวัติศาสตร์",   value: "บุคคลประวัติศาสตร์โลก" },
-  { emoji: "🦁", label: "สัตว์ป่า",         value: "สัตว์ป่า" },
-  { emoji: "🌊", label: "สัตว์ทะเล",        value: "สัตว์ทะเล" },
-  { emoji: "⚽", label: "นักฟุตบอล",        value: "นักฟุตบอลชื่อดัง" },
-  { emoji: "🧙", label: "แฟนตาซี",          value: "ตัวละครแฟนตาซี เวทมนตร์" },
-  { emoji: "🌶️", label: "ตัวร้าย",         value: "ตัวร้ายในภาพยนตร์และการ์ตูน" },
-  { emoji: "👨‍🍳", label: "อาชีพ",          value: "อาชีพต่างๆ" },
+  { emoji: "⚽", label: "นักฟุตบอล",         value: "นักฟุตบอลชื่อดังระดับโลก เช่น Messi, Ronaldo, Mbappe, Neymar", group: "กีฬา" },
+  { emoji: "🏆", label: "ทีมฟุตบอล",         value: "ทีมฟุตบอลชื่อดังทั่วโลก เช่น Real Madrid, Barcelona, Manchester United, Liverpool, Bayern Munich", group: "กีฬา" },
+  { emoji: "🏀", label: "นักบาสเกตบอล",      value: "นักบาสเกตบอล NBA ชื่อดัง เช่น LeBron James, Michael Jordan, Stephen Curry", group: "กีฬา" },
+  { emoji: "🎾", label: "นักเทนนิส",         value: "นักเทนนิสชื่อดัง เช่น Federer, Nadal, Djokovic, Serena Williams", group: "กีฬา" },
+  { emoji: "🥊", label: "นักมวย/ต่อสู้",     value: "นักมวยและนักต่อสู้ชื่อดัง เช่น Muhammad Ali, Buakaw, Saenchai, Tyson Fury", group: "กีฬา" },
+  { emoji: "🏊", label: "นักกีฬาโอลิมปิก",  value: "นักกีฬาโอลิมปิกชื่อดัง เช่น Usain Bolt, Michael Phelps, Simone Biles", group: "กีฬา" },
+  { emoji: "🍜", label: "อาหารไทย",          value: "อาหารไทยชื่อดัง เช่น ผัดไทย ต้มยำกุ้ง ข้าวผัด ส้มตำ แกงมัสสมั่น ข้าวมันไก่", group: "อาหาร" },
+  { emoji: "🍕", label: "อาหารโลก",          value: "อาหารชื่อดังจากทั่วโลก เช่น Pizza, Sushi, Burger, Pasta, Tacos, Croissant", group: "อาหาร" },
+  { emoji: "🍣", label: "อาหารญี่ปุ่น",      value: "อาหารญี่ปุ่น เช่น Sushi, Ramen, Tempura, Udon, Takoyaki, Miso Soup", group: "อาหาร" },
+  { emoji: "🧁", label: "ของหวาน/ขนม",       value: "ของหวานและขนมชื่อดัง เช่น Tiramisu, Cheesecake, Macaron, Donut, Ice cream", group: "อาหาร" },
+  { emoji: "🍹", label: "เครื่องดื่ม",       value: "เครื่องดื่มชื่อดัง เช่น Coca-Cola, Starbucks Latte, Bubble Tea, Espresso, Sprite", group: "อาหาร" },
+  { emoji: "🦁", label: "สัตว์ป่า",          value: "สัตว์ป่าชนิดต่างๆ เช่น สิงโต เสือ ช้าง ยีราฟ หมี กอริลลา", group: "สัตว์" },
+  { emoji: "🌊", label: "สัตว์ทะเล",         value: "สัตว์ทะเลชนิดต่างๆ เช่น ฉลาม วาฬ ปลาโลมา ปลาหมึก กุ้ง ปู", group: "สัตว์" },
+  { emoji: "🐦", label: "นก",                value: "นกชนิดต่างๆ เช่น นกอินทรี นกฟลามิงโก้ นกแก้ว เพนกวิน นกฮูก", group: "สัตว์" },
+  { emoji: "🐕", label: "สัตว์เลี้ยง",       value: "สายพันธุ์สัตว์เลี้ยงชนิดต่างๆ เช่น โกลเด้น ปอมเมอเรเนียน เปอร์เซีย เมนคูน", group: "สัตว์" },
+  { emoji: "🎬", label: "ดาราฮอลลีวูด",     value: "ดาราฮอลลีวูดชื่อดัง", group: "บันเทิง" },
+  { emoji: "🎭", label: "ดาราไทย",           value: "ดาราและนักแสดงไทยชื่อดัง", group: "บันเทิง" },
+  { emoji: "📺", label: "ดาราเกาหลี",        value: "ดาราเกาหลี K-pop K-drama ชื่อดัง", group: "บันเทิง" },
+  { emoji: "🎵", label: "ศิลปิน/นักร้อง",    value: "ศิลปินนักร้องชื่อดังระดับโลก", group: "บันเทิง" },
+  { emoji: "⛩️", label: "อนิเมะ",            value: "ตัวละครอนิเมะชื่อดัง เช่น Naruto, Luffy, Goku, Sakura, Eren, Nezuko", group: "บันเทิง" },
+  { emoji: "🦸", label: "มาร์เวล/DC",        value: "ซุปเปอร์ฮีโร่ เช่น Spider-Man, Batman, Wonder Woman, Iron Man, Thor, Black Panther", group: "บันเทิง" },
+  { emoji: "🐭", label: "ดิสนีย์/พิกซาร์",  value: "ตัวละครดิสนีย์และพิกซาร์ เช่น Mickey, Elsa, Simba, Moana, Woody, Buzz", group: "บันเทิง" },
+  { emoji: "👾", label: "ตัวละครเกม",        value: "ตัวละครในวิดีโอเกมชื่อดัง เช่น Mario, Pikachu, Master Chief, Link, Lara Croft", group: "บันเทิง" },
+  { emoji: "🌶️", label: "ตัวร้าย",          value: "ตัวร้ายชื่อดัง เช่น Joker, Thanos, Voldemort, Darth Vader, Maleficent", group: "บันเทิง" },
+  { emoji: "🧙", label: "แฟนตาซี",           value: "ตัวละครแฟนตาซี เช่น Harry Potter, Gandalf, Frodo, Dumbledore, Merlin", group: "บันเทิง" },
+  { emoji: "🌍", label: "ประเทศ",            value: "ประเทศต่างๆ ทั่วโลก", group: "โลก" },
+  { emoji: "🏙️", label: "เมืองสำคัญ",       value: "เมืองและนครสำคัญทั่วโลก เช่น Tokyo, Paris, New York, Bangkok, Dubai, London", group: "โลก" },
+  { emoji: "🗺️", label: "สถานที่ท่องเที่ยว", value: "สถานที่ท่องเที่ยวชื่อดัง เช่น Eiffel Tower, Great Wall, Colosseum, Niagara Falls", group: "โลก" },
+  { emoji: "👑", label: "ผู้นำโลก",          value: "ผู้นำประเทศและประธานาธิบดีชื่อดัง", group: "บุคคล" },
+  { emoji: "🔬", label: "นักวิทยาศาสตร์",    value: "นักวิทยาศาสตร์ผู้ยิ่งใหญ่ เช่น Einstein, Newton, Curie, Darwin, Tesla", group: "บุคคล" },
+  { emoji: "⚔️", label: "ประวัติศาสตร์",     value: "บุคคลประวัติศาสตร์โลก ทั้งไทยและต่างประเทศ", group: "บุคคล" },
+  { emoji: "🚗", label: "แบรนด์รถยนต์",      value: "แบรนด์รถยนต์ชื่อดัง เช่น Ferrari, BMW, Toyota, Tesla, Lamborghini, Rolls-Royce", group: "สิ่งของ" },
+  { emoji: "✈️", label: "พาหนะ",             value: "พาหนะชนิดต่างๆ ทางบก ทางน้ำ ทางอากาศ", group: "สิ่งของ" },
+  { emoji: "📱", label: "แบรนด์/บริษัท",     value: "แบรนด์และบริษัทชื่อดัง เช่น Apple, Google, Nike, LEGO, Coca-Cola, Samsung", group: "สิ่งของ" },
+  { emoji: "👨‍🍳", label: "อาชีพ",           value: "อาชีพต่างๆ", group: "สิ่งของ" },
 ];
 
+const GROUPS = ["กีฬา", "อาหาร", "สัตว์", "บันเทิง", "โลก", "บุคคล", "สิ่งของ"];
+
 const DIFFICULTY_OPTIONS: { value: Difficulty; label: string; desc: string; color: string; bg: string; border: string }[] = [
-  { value: "easy",   label: "🟢 ง่าย",   desc: "ทุกคนรู้จัก", color: "#34d399", bg: "rgba(52,211,153,0.1)",   border: "rgba(52,211,153,0.3)"   },
-  { value: "medium", label: "🟡 กลาง",  desc: "คิดนิดหน่อย",  color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  border: "rgba(251,191,36,0.3)"   },
-  { value: "hard",   label: "🔴 ยาก",   desc: "ต้องรู้เยอะ",  color: "#fb7185", bg: "rgba(251,113,133,0.1)", border: "rgba(251,113,133,0.3)"  },
+  { value: "easy",   label: "🟢 ง่าย",   desc: "ทุกคนรู้จัก",  color: "#34d399", bg: "rgba(52,211,153,0.1)",   border: "rgba(52,211,153,0.3)"   },
+  { value: "medium", label: "🟡 กลาง",   desc: "คิดนิดหน่อย",  color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  border: "rgba(251,191,36,0.3)"   },
+  { value: "hard",   label: "🔴 ยาก",    desc: "ต้องรู้เยอะ",  color: "#fb7185", bg: "rgba(251,113,133,0.1)", border: "rgba(251,113,133,0.3)"  },
 ];
 
 export function Setup({
@@ -54,15 +74,17 @@ export function Setup({
   const [customTopic, setCustomTopic]     = useState<string>("");
   const [useCustom, setUseCustom]         = useState(false);
   const [difficulty, setDifficulty]       = useState<Difficulty>("medium");
+  const [activeGroup, setActiveGroup]     = useState<string>("กีฬา");
 
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
   const [aiNote, setAiNote]     = useState("");
 
-  const others    = room.players.filter((p) => p.id !== playerId);
-  const needAnswer = room.players.filter((p) => !room.answers[p.id]);
-  const readyCount = room.players.length - needAnswer.length;
-  const progressPct = Math.round((readyCount / room.players.length) * 100);
+  const others    = room.players.filter((p) => p.id !== playerId && !p.isSpectator);
+  const needAnswer = room.players.filter((p) => !p.isSpectator && !room.answers[p.id]);
+  const readyCount = room.players.filter(p => !p.isSpectator).length - needAnswer.length;
+  const totalPlayers = room.players.filter(p => !p.isSpectator).length;
+  const progressPct = totalPlayers > 0 ? Math.round((readyCount / totalPlayers) * 100) : 0;
 
   const effectiveTopic = useCustom ? customTopic.trim() : selectedTopic;
 
@@ -85,13 +107,13 @@ export function Setup({
   }
 
   async function handleAI() {
-    setError(""); setAiNote("");
-    if (!effectiveTopic) { setError("เลือกหรือพิมพ์หัวข้อก่อน"); return; }
+    if (!effectiveTopic) { setError("เลือกหรือพิมพ์หัวข้อ"); return; }
     setLoading(true);
+    setError("");
+    setAiNote("");
     try {
       const res = await setupAI(room.code, playerId, effectiveTopic, difficulty);
-      const src = res.source === "openai" ? "ChatGPT" : res.source === "gemini" ? "Gemini" : "รายการสำรอง";
-      setAiNote(`✨ ${src} สุ่มให้ ${res.assigned} คนแล้ว`);
+      setAiNote(res?.source ?? "สุ่มเรียบร้อย!");
       onRefresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "error");
@@ -100,8 +122,9 @@ export function Setup({
     }
   }
 
-  async function handleStartPlaying() {
-    setLoading(true); setError("");
+  async function handleBeginGame() {
+    setLoading(true);
+    setError("");
     try {
       await startGame(room.code, playerId, "playing");
       onRefresh();
@@ -112,258 +135,227 @@ export function Setup({
     }
   }
 
-  const inputStyle = {
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "0.6rem",
-    color: "#e2e8f0",
-    width: "100%",
-    padding: "0.6rem 0.875rem",
-    fontSize: "0.875rem",
-    outline: "none",
-    transition: "border-color 0.2s, box-shadow 0.2s",
+  const cardStyle = {
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: "1rem",
   };
-  function onFocus(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) {
-    e.currentTarget.style.borderColor = "#6366f1";
-    e.currentTarget.style.boxShadow   = "0 0 0 3px rgba(99,102,241,0.2)";
-  }
-  function onBlur(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) {
-    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-    e.currentTarget.style.boxShadow   = "none";
-  }
+
+  const filteredTopics = TOPIC_PRESETS.filter(t => t.group === activeGroup);
+  const currentTopicLabel = TOPIC_PRESETS.find(t => t.value === selectedTopic)?.label ?? "กำหนดเอง";
 
   return (
-    <div className="w-full max-w-md animate-slide-up">
-      <div
-        className="rounded-2xl p-6"
-        style={{
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
-        }}
-      >
-        <h2 className="text-lg font-bold text-slate-100">เตรียมเกม</h2>
-        <p className="text-xs text-slate-500 mt-1 mb-5">
-          ตั้งคำตอบให้ผู้เล่นคนอื่น — แต่ละคนต้องมีคำตอบ 1 อย่าง
-        </p>
-
-        {/* Progress */}
-        <div className="mb-5">
-          <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-slate-500">ความคืบหน้า</span>
-            <span className="font-semibold text-slate-300">{readyCount}/{room.players.length} คน</span>
-          </div>
-          <div className="relative h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
-            <div
-              className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
-              style={{
-                width: `${progressPct}%`,
-                background: progressPct === 100 ? "linear-gradient(90deg,#34d399,#10b981)" : "linear-gradient(90deg,#6366f1,#8b5cf6)",
-                boxShadow:  progressPct === 100 ? "0 0 10px rgba(52,211,153,0.5)"           : "0 0 10px rgba(99,102,241,0.5)",
-              }}
-            />
-          </div>
-          {needAnswer.length > 0 && (
-            <p className="mt-2 text-xs text-slate-600">ยังขาด: {needAnswer.map((p) => p.name).join(", ")}</p>
-          )}
+    <div className="w-full max-w-xl animate-slide-up space-y-4">
+      {/* Progress */}
+      <div className="rounded-2xl p-4" style={cardStyle}>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-xs font-bold text-slate-400">ความพร้อม</span>
+          <span className="text-xs font-black text-slate-300">{readyCount}/{totalPlayers} คน</span>
         </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-xl mb-5" style={{ background: "rgba(255,255,255,0.04)" }}>
-          {(["manual","ai"] as const).map((t) => (
-            <button
-              key={t}
-              id={`tab-setup-${t}`}
-              onClick={() => setTab(t)}
-              className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
-              style={
-                tab === t
-                  ? { background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", boxShadow: "0 4px 12px rgba(99,102,241,0.35)" }
-                  : { color: "#64748b" }
-              }
-            >
-              {t === "manual" ? "✏️ ตั้งเอง" : "✨ สุ่ม AI"}
-            </button>
-          ))}
+        <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
+          <div className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${progressPct}%`, background: progressPct === 100 ? "#34d399" : "linear-gradient(90deg,#6366f1,#8b5cf6)" }} />
         </div>
-
-        {/* ── Manual tab ── */}
-        {tab === "manual" ? (
-          <form onSubmit={handleManual} className="space-y-3 animate-fade-in">
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">ตั้งให้ใคร</label>
-              <select value={selectedTarget} onChange={(e) => setSelectedTarget(e.target.value)} style={inputStyle} onFocus={onFocus} onBlur={onBlur}>
-                <option value="" style={{ background: "#0e1022" }}>— เลือกผู้เล่น —</option>
-                {others.map((p) => (
-                  <option key={p.id} value={p.id} style={{ background: "#0e1022" }}>
-                    {p.name}{room.answers[p.id] ? " ✓" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">คำตอบ</label>
-              <input
-                value={answerInput}
-                onChange={(e) => setAnswerInput(e.target.value)}
-                maxLength={60}
-                placeholder="เช่น อัลเบิร์ต ไอน์สไตน์"
-                style={inputStyle} onFocus={onFocus} onBlur={onBlur}
-              />
-            </div>
-            <button
-              type="submit" disabled={loading}
-              className="w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all duration-200"
-              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 4px 16px rgba(99,102,241,0.3)" }}
-            >
-              {loading ? "กำลังบันทึก..." : "💾 ตั้งคำตอบ"}
-            </button>
-          </form>
-
-        ) : (
-          /* ── AI tab ── */
-          <div className="space-y-4 animate-fade-in">
-
-            {/* Topic grid */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                เลือกหัวข้อ
-              </label>
-              <div className="grid grid-cols-3 gap-1.5">
-                {TOPIC_PRESETS.map((t) => {
-                  const isActive = !useCustom && selectedTopic === t.value;
-                  return (
-                    <button
-                      key={t.value}
-                      type="button"
-                      onClick={() => { setUseCustom(false); setSelectedTopic(t.value); }}
-                      className="flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl text-center transition-all duration-150"
-                      style={
-                        isActive
-                          ? { background: "rgba(99,102,241,0.2)", border: "1px solid rgba(99,102,241,0.5)", color: "#818cf8" }
-                          : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "#64748b" }
-                      }
-                    >
-                      <span className="text-lg leading-none">{t.emoji}</span>
-                      <span className="text-[10px] font-medium leading-tight">{t.label}</span>
-                    </button>
-                  );
-                })}
-                {/* Custom topic tile */}
-                <button
-                  type="button"
-                  onClick={() => setUseCustom(true)}
-                  className="flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl text-center transition-all duration-150"
-                  style={
-                    useCustom
-                      ? { background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.4)", color: "#38bdf8" }
-                      : { background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(255,255,255,0.15)", color: "#475569" }
-                  }
-                >
-                  <span className="text-lg leading-none">✏️</span>
-                  <span className="text-[10px] font-medium leading-tight">กำหนดเอง</span>
-                </button>
-              </div>
-
-              {/* Custom input */}
-              {useCustom && (
-                <div className="mt-3 animate-slide-up">
-                  <input
-                    value={customTopic}
-                    onChange={(e) => setCustomTopic(e.target.value)}
-                    maxLength={60}
-                    placeholder="เช่น นักดนตรีแจ๊ส, ตัวละคร One Piece..."
-                    style={inputStyle}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#38bdf8"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(56,189,248,0.15)"; }}
-                    onBlur={(e)  => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.boxShadow = "none"; }}
-                    autoFocus
-                  />
-                </div>
-              )}
-
-              {/* Selected topic preview */}
-              {!useCustom && (
-                <p className="mt-2 text-xs text-slate-600 text-center">
-                  หัวข้อ: <span className="text-slate-400 font-medium">{TOPIC_PRESETS.find(t => t.value === selectedTopic)?.emoji} {TOPIC_PRESETS.find(t => t.value === selectedTopic)?.label}</span>
-                </p>
-              )}
-            </div>
-
-            {/* Difficulty */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                ระดับความยาก
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {DIFFICULTY_OPTIONS.map((d) => (
-                  <button
-                    key={d.value}
-                    type="button"
-                    id={`btn-difficulty-${d.value}`}
-                    onClick={() => setDifficulty(d.value)}
-                    className="flex flex-col items-center gap-1 py-2.5 rounded-xl text-center transition-all duration-150"
-                    style={
-                      difficulty === d.value
-                        ? { background: d.bg, border: `1px solid ${d.border}`, color: d.color, boxShadow: `0 4px 12px ${d.bg}` }
-                        : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "#475569" }
-                    }
-                  >
-                    <span className="text-sm font-bold">{d.label}</span>
-                    <span className="text-[10px]" style={{ color: difficulty === d.value ? d.color : "#374151" }}>{d.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              id="btn-ai-assign"
-              onClick={handleAI}
-              disabled={loading || (!effectiveTopic)}
-              className="w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40 transition-all duration-200"
-              style={{ background: "linear-gradient(135deg,#8b5cf6,#6366f1)", boxShadow: "0 4px 16px rgba(139,92,246,0.35)" }}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                  กำลังสุ่ม...
-                </span>
-              ) : "✨ สุ่มคำตอบให้ทุกคนที่ยังไม่มี"}
-            </button>
-
-            {aiNote && (
-              <div className="rounded-xl px-3 py-2.5 text-xs font-medium animate-fade-in"
-                style={{ background: "rgba(52,211,153,0.1)", color: "#34d399", border: "1px solid rgba(52,211,153,0.2)" }}>
-                {aiNote}
-              </div>
-            )}
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-3 rounded-xl px-3 py-2.5 text-sm animate-fade-in"
-            style={{ background: "rgba(251,113,133,0.1)", color: "#fb7185" }}>
-            {error}
-          </div>
-        )}
-
-        {amHost && (
-          <button
-            id="btn-start-playing"
-            onClick={handleStartPlaying}
-            disabled={loading || needAnswer.length > 0}
-            className="mt-5 w-full py-3.5 rounded-xl font-bold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={
-              needAnswer.length === 0
-                ? { background: "linear-gradient(135deg,#10b981,#34d399)", boxShadow: "0 8px 24px rgba(16,185,129,0.4)" }
-                : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }
-            }
-            onMouseEnter={(e) => { if (!needAnswer.length) e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
-          >
-            {needAnswer.length > 0 ? `⏳ รอคำตอบครบ (${needAnswer.length} คน)` : "🚀 เริ่มเล่น!"}
-          </button>
+        {room.answers[playerId] && (
+          <p className="text-[10px] text-slate-500 mt-2">✅ คุณตั้งคำตอบให้คนอื่นแล้ว</p>
         )}
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 p-1 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+        {(["manual", "ai"] as const).map((t) => (
+          <button key={t} onClick={() => setTab(t)}
+            className="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all duration-200"
+            style={tab === t
+              ? { background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", boxShadow: "0 4px 12px rgba(99,102,241,0.35)" }
+              : { background: "transparent", color: "#475569" }}>
+            {t === "manual" ? "✏️ ตั้งเอง" : "✨ สุ่ม AI"}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Manual tab ── */}
+      {tab === "manual" && (
+        <div className="rounded-2xl p-5 space-y-4" style={cardStyle}>
+          <p className="text-xs text-slate-500">ตั้งชื่อให้ผู้เล่นคนอื่น — แต่ละคนตั้งได้คนละ 1 คน</p>
+          <form onSubmit={handleManual} className="space-y-3">
+            {/* Target selector */}
+            <div className="grid grid-cols-2 gap-2">
+              {others.map((p) => {
+                const hasAnswer = !!room.answers[p.id];
+                const isSelected = selectedTarget === p.id;
+                return (
+                  <button key={p.id} type="button" onClick={() => !hasAnswer && setSelectedTarget(p.id)}
+                    disabled={hasAnswer}
+                    className="p-3 rounded-xl text-sm font-bold text-left transition-all duration-150"
+                    style={isSelected
+                      ? { background: "rgba(99,102,241,0.2)", border: "1px solid rgba(99,102,241,0.5)", color: "#a5b4fc" }
+                      : hasAnswer
+                        ? { background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#34d399", cursor: "default" }
+                        : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#94a3b8" }}>
+                    {hasAnswer ? "✅ " : ""}{p.name}
+                  </button>
+                );
+              })}
+            </div>
+            {others.length === 0 && (
+              <p className="text-xs text-slate-600 text-center py-2">ไม่มีผู้เล่นอื่น</p>
+            )}
+            {selectedTarget && (
+              <div className="space-y-2">
+                <input
+                  value={answerInput}
+                  onChange={(e) => setAnswerInput(e.target.value)}
+                  placeholder={`ชื่อตัวละครให้ ${others.find(p => p.id === selectedTarget)?.name}...`}
+                  className="w-full px-4 py-3 rounded-xl text-sm font-medium text-white placeholder-slate-600 outline-none transition-all"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+                  maxLength={50}
+                />
+                <button type="submit" disabled={loading || !answerInput.trim()}
+                  className="w-full py-3 rounded-xl text-sm font-black text-white transition-all"
+                  style={{ background: loading ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg,#6366f1,#8b5cf6)", opacity: (!answerInput.trim()) ? 0.4 : 1 }}>
+                  {loading ? "กำลังบันทึก..." : "✅ บันทึก"}
+                </button>
+              </div>
+            )}
+          </form>
+        </div>
+      )}
+
+      {/* ── AI tab ── */}
+      {tab === "ai" && (
+        <div className="rounded-2xl p-5 space-y-4" style={cardStyle}>
+          {amHost ? (
+            <>
+              {/* Host-only: group filter */}
+              <div>
+                <p className="text-xs font-bold text-slate-400 mb-2">เลือกหมวดหมู่</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {GROUPS.map(g => (
+                    <button key={g} onClick={() => setActiveGroup(g)}
+                      className="px-3 py-1 rounded-full text-xs font-bold transition-all"
+                      style={activeGroup === g
+                        ? { background: "rgba(99,102,241,0.25)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.4)" }
+                        : { background: "rgba(255,255,255,0.05)", color: "#475569", border: "1px solid rgba(255,255,255,0.07)" }}>
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Topic grid */}
+              <div>
+                <p className="text-xs font-bold text-slate-400 mb-2">เลือกหัวข้อ</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {filteredTopics.map((topic) => {
+                    const isActive = !useCustom && selectedTopic === topic.value;
+                    return (
+                      <button key={topic.value} onClick={() => { setSelectedTopic(topic.value); setUseCustom(false); }}
+                        className="p-2.5 rounded-xl flex flex-col items-center gap-1 text-center transition-all duration-150"
+                        style={isActive
+                          ? { background: "rgba(99,102,241,0.2)", border: "1px solid rgba(99,102,241,0.5)" }
+                          : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <span className="text-xl">{topic.emoji}</span>
+                        <span className="text-[10px] font-bold leading-tight" style={{ color: isActive ? "#a5b4fc" : "#64748b" }}>{topic.label}</span>
+                      </button>
+                    );
+                  })}
+                  {/* Custom tile */}
+                  <button onClick={() => setUseCustom(true)}
+                    className="p-2.5 rounded-xl flex flex-col items-center gap-1 text-center transition-all duration-150"
+                    style={useCustom
+                      ? { background: "rgba(99,102,241,0.2)", border: "1px solid rgba(99,102,241,0.5)" }
+                      : { background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(255,255,255,0.15)" }}>
+                    <span className="text-xl">✏️</span>
+                    <span className="text-[10px] font-bold leading-tight" style={{ color: useCustom ? "#a5b4fc" : "#64748b" }}>กำหนดเอง</span>
+                  </button>
+                </div>
+                {useCustom && (
+                  <input value={customTopic} onChange={(e) => setCustomTopic(e.target.value)}
+                    placeholder="เช่น นักร้องไทยยุค 90..." autoFocus
+                    className="mt-2 w-full px-3 py-2.5 rounded-xl text-sm text-white placeholder-slate-600 outline-none"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(99,102,241,0.4)" }}
+                    maxLength={80} />
+                )}
+              </div>
+
+              {/* Difficulty */}
+              <div>
+                <p className="text-xs font-bold text-slate-400 mb-2">ระดับความยาก</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {DIFFICULTY_OPTIONS.map((opt) => (
+                    <button key={opt.value} onClick={() => setDifficulty(opt.value)}
+                      className="py-2.5 px-2 rounded-xl text-xs font-bold text-center transition-all duration-150"
+                      style={difficulty === opt.value
+                        ? { background: opt.bg, border: `1px solid ${opt.border}`, color: opt.color }
+                        : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#475569" }}>
+                      {opt.label}
+                      <div className="text-[9px] mt-0.5 opacity-70">{opt.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI button */}
+              {aiNote && (
+                <div className="rounded-xl px-4 py-2.5 text-sm text-center font-semibold"
+                  style={{ background: "rgba(52,211,153,0.1)", color: "#34d399", border: "1px solid rgba(52,211,153,0.2)" }}>
+                  ✅ {aiNote}
+                </div>
+              )}
+              <button onClick={handleAI} disabled={loading || !effectiveTopic}
+                className="w-full py-3.5 rounded-2xl font-black text-white text-sm transition-all"
+                style={{ background: loading ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg,#6366f1,#8b5cf6)",
+                  boxShadow: "0 8px 24px rgba(99,102,241,0.3)", opacity: !effectiveTopic ? 0.5 : 1 }}>
+                {loading ? "🤖 AI กำลังสุ่ม..." : "✨ สุ่มคำตอบให้ทุกคนทีเดียว"}
+              </button>
+            </>
+          ) : (
+            /* Non-host: read-only view */
+            <div className="text-center py-6 space-y-3">
+              <div className="text-4xl mb-2">👀</div>
+              <p className="text-sm font-bold text-slate-300">รอ Host เลือกหัวข้อ</p>
+              <p className="text-xs text-slate-600">เฉพาะ Host เท่านั้นที่เลือกหัวข้อและสุ่มคำตอบได้</p>
+              {room.topic && (
+                <div className="mt-3 rounded-xl px-4 py-3 inline-block"
+                  style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)" }}>
+                  <p className="text-xs text-slate-500 mb-1">หัวข้อที่เลือก</p>
+                  <p className="text-sm font-bold text-indigo-300">{room.topic}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-xl px-4 py-3 text-sm font-semibold"
+          style={{ background: "rgba(251,113,133,0.1)", color: "#fb7185", border: "1px solid rgba(251,113,133,0.2)" }}>
+          {error}
+        </div>
+      )}
+
+      {/* Begin Game (host only, when all ready) */}
+      {amHost && (
+        <div className="rounded-2xl p-4" style={cardStyle}>
+          {needAnswer.length > 0 ? (
+            <p className="text-xs text-slate-500 text-center">
+              ⏳ รอ {needAnswer.map(p => p.name).join(", ")} ตั้งคำตอบ ({readyCount}/{totalPlayers})
+            </p>
+          ) : (
+            <button onClick={handleBeginGame} disabled={loading}
+              className="w-full py-4 rounded-2xl font-black text-white text-base transition-all duration-200"
+              style={{ background: "linear-gradient(135deg,#34d399,#059669)", boxShadow: "0 8px 32px rgba(52,211,153,0.35)" }}>
+              🚀 เริ่มเล่น!
+            </button>
+          )}
+        </div>
+      )}
+      {!amHost && needAnswer.length === 0 && (
+        <div className="rounded-2xl p-4 text-center" style={cardStyle}>
+          <p className="text-sm font-bold text-slate-400">✅ ทุกคนพร้อมแล้ว — รอ Host กด เริ่มเล่น</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -11,8 +11,9 @@ export interface Player {
   guessedCorrectly: boolean;
   guessedThisRound: boolean;
   lastSeen: number;
-  /** bonus extra questions remaining this round */
   bonusQuestions: number;
+  /** true = spectator, can watch but not play */
+  isSpectator: boolean;
 }
 
 export type ChatType = "question" | "answer" | "guess" | "system";
@@ -84,6 +85,10 @@ export interface PublicRoomState {
   questionsThisTurn: number;
   roundStartedAt: number;
   roundDurationSeconds: number;
+  /** true if the viewer is a spectator */
+  isSpectator: boolean;
+  /** all answers — only populated for spectators */
+  allAnswers: Record<string, string>;
   createdAt: number;
 }
 

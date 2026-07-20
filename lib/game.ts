@@ -51,7 +51,7 @@ export function emptyRoom(code: string, host: Player): RoomState {
   };
 }
 
-export function newPlayer(name: string): Player {
+export function newPlayer(name: string, isSpectator = false): Player {
   const trimmed = name.trim().slice(0, 20) || "ผู้เล่น";
   return {
     id: genId(),
@@ -61,6 +61,7 @@ export function newPlayer(name: string): Player {
     guessedThisRound: false,
     lastSeen: Date.now(),
     bonusQuestions: 2,
+    isSpectator,
   };
 }
 
@@ -74,6 +75,8 @@ export function isHost(room: RoomState, playerId: string) {
 
 /** Strip own answer; keep others' answers. Used before sending to a client. */
 export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
+  const viewer = room.players.find(p => p.id === viewerId);
+  const isSpectator = viewer?.isSpectator ?? false;
   const others: Record<string, string> = {};
   for (const [pid, ans] of Object.entries(room.answers)) {
     if (pid !== viewerId) others[pid] = ans;
@@ -103,6 +106,8 @@ export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
     questionsThisTurn: room.questionsThisTurn ?? 0,
     roundStartedAt: room.roundStartedAt ?? 0,
     roundDurationSeconds: room.roundDurationSeconds ?? 420,
+    isSpectator,
+    allAnswers: isSpectator ? { ...room.answers } : {},
     createdAt: room.createdAt,
   };
 }
@@ -116,10 +121,11 @@ function pushChat(room: RoomState, msg: Omit<RoomState["chat"][number], "id" | "
 
 /** Add a player to the room if allowed. Returns updated (mutated) room. */
 export function addPlayer(room: RoomState, player: Player): { ok: boolean; error?: string } {
-  if (room.status !== "lobby") {
-    return { ok: false, error: "เกมเริ่มแล้ว ไม่สามารถเข้าร่วมได้" };
+  // Spectators can join at any time
+  if (!player.isSpectator && room.status !== "lobby") {
+    return { ok: false, error: "เกมเริ่มแล้ว ไม่สามารถเข้าร่วมได้ (ลองเข้าร่วมเป็นคนดูแทนได้)" };
   }
-  if (room.players.length >= MAX_PLAYERS) {
+  if (!player.isSpectator && room.players.filter(p => !p.isSpectator).length >= MAX_PLAYERS) {
     return { ok: false, error: "ห้องเต็มแล้ว" };
   }
   if (room.players.some((p) => p.name.toLowerCase() === player.name.toLowerCase())) {
@@ -164,7 +170,7 @@ export function beginPlaying(room: RoomState): { ok: boolean; error?: string } {
   room.waitingForAnswer = false;
   room.questionsThisTurn = 0;
   room.roundStartedAt = Date.now();
-  room.turnOrder = room.players.map((p) => p.id);
+  room.turnOrder = room.players.filter(p => !p.isSpectator).map((p) => p.id);
   for (let i = room.turnOrder.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [room.turnOrder[i], room.turnOrder[j]] = [room.turnOrder[j], room.turnOrder[i]];
@@ -184,12 +190,11 @@ export function beginPlaying(room: RoomState): { ok: boolean; error?: string } {
   return { ok: true };
 }
 
-/** Check if round is over: 3 finishers exist OR all players guessed/locked. */
+/** Check if round is over: 3 finishers exist OR all active (non-spectator) players guessed/locked. */
 export function isRoundOver(room: RoomState): boolean {
   if (room.finishers.length >= 3) return true;
-  // everyone locked (guessed correctly OR used their wrong-guess attempt)
   const activeGuessers = room.players.filter(
-    (p) => !p.guessedCorrectly && !p.guessedThisRound
+    (p) => !p.isSpectator && !p.guessedCorrectly && !p.guessedThisRound
   );
   return activeGuessers.length === 0;
 }
