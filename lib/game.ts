@@ -144,7 +144,8 @@ export function addPlayer(room: RoomState, player: Player): { ok: boolean; error
 /** Begin setup phase: status -> setup, assign turn order later at playing. */
 export function beginSetup(room: RoomState): { ok: boolean; error?: string } {
   if (room.status !== "lobby") return { ok: false, error: "ไม่สามารถเริ่มได้" };
-  if (room.players.length < MIN_PLAYERS) {
+  const activePlayers = room.players.filter(p => !p.isSpectator);
+  if (activePlayers.length < MIN_PLAYERS) {
     return { ok: false, error: `ต้องมีผู้เล่นอย่างน้อย ${MIN_PLAYERS} คน` };
   }
   room.status = "setup";
@@ -157,10 +158,10 @@ export function beginSetup(room: RoomState): { ok: boolean; error?: string } {
   return { ok: true };
 }
 
-/** Start playing: requires every player to have an answer assigned. */
+/** Start playing: requires every active (non-spectator) player to have an answer assigned. */
 export function beginPlaying(room: RoomState): { ok: boolean; error?: string } {
   if (room.status !== "setup") return { ok: false, error: "ยังไม่อยู่ในขั้นตอน setup" };
-  const missing = room.players.filter((p) => !room.answers[p.id]);
+  const missing = room.players.filter((p) => !p.isSpectator && !room.answers[p.id]);
   if (missing.length > 0) {
     return { ok: false, error: `ยังขาดคำตอบของ ${missing.map((m) => m.name).join(", ")}` };
   }
@@ -397,12 +398,12 @@ export function applyAction(
     return { ok: true };
   }
 
-  // ──── SET MAX QUESTIONS (host only, lobby/setup) ────
+  // ──── SET MAX QUESTIONS (host only, any status) ────
   if (payload.type === "setMaxQuestions") {
     if (room.hostId !== playerId) {
       return { ok: false, error: "เฉพาะ host เท่านั้น" };
     }
-    room.maxQuestionsPerTurn = Math.max(0, Math.min(20, Number(payload.value) || 0));
+    room.maxQuestionsPerTurn = Math.max(0, Math.min(20, Number(payload.value ?? 5)));
     return { ok: true };
   }
 
@@ -453,9 +454,9 @@ export function startNextRound(room: RoomState): { ok: boolean; error?: string }
     p.guessedCorrectly = false;
     p.guessedThisRound = false;
   }
-  // keep old answers but host may reset; clear to force re-setup
+  // clear answers — host must re-run AI setup
   room.answers = {};
-  room.setupMode = "manual";
+  room.setupMode = "ai";
   room.topic = "";
   room.difficulty = "medium";
   pushChat(room, {

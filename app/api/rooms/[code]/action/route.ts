@@ -28,6 +28,16 @@ export async function POST(
   const rawType = body.type as string | undefined;
   const rawText = (body.text as string | undefined) ?? "";
 
+  // setMaxQuestions works in any phase (lobby, setup, playing)
+  if (rawType === "setMaxQuestions") {
+    const val = Number(body.value ?? 5);
+    const payload: ActionPayload = { type: "setMaxQuestions", value: val };
+    const result = applyAction(room, playerId, payload);
+    if (!result.ok) return Response.json({ error: result.error }, { status: 400 });
+    await saveRoom(room);
+    return Response.json({ ok: true });
+  }
+
   let payload: ActionPayload;
   if (rawType === "ask") {
     payload = { type: "ask", text: rawText };
@@ -39,8 +49,6 @@ export async function POST(
     payload = { type: "pass" };
   } else if (rawType === "timeUp") {
     payload = { type: "timeUp" };
-  } else if (rawType === "setMaxQuestions") {
-    payload = { type: "setMaxQuestions", value: Number(body.value) || 5 };
   } else {
     return Response.json({ error: "action ไม่ถูกต้อง" }, { status: 400 });
   }

@@ -50,8 +50,8 @@ export async function POST(
     room.topic = topic;
     room.difficulty = difficulty;
 
-    // collect players who still need an answer
-    const need = room.players.filter((p) => !room.answers[p.id]);
+    // collect active (non-spectator) players who still need an answer
+    const need = room.players.filter((p) => !p.isSpectator && !room.answers[p.id]);
     if (need.length === 0) {
       return Response.json({ ok: true, assigned: 0, source: "none" });
     }
