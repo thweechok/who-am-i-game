@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { PublicRoomState, ChatMessage } from "@/lib/types";
-import { sendAction } from "@/lib/api-client";
+import { sendAction, getAIAnswer } from "@/lib/api-client";
 
 export function Playing({
   room,
@@ -19,6 +19,8 @@ export function Playing({
   const [mode, setMode] = useState<"ask" | "guess">("ask");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<{ answer: string; reason: string; source: string } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,6 +62,7 @@ export function Playing({
   async function handleAnswer(val: "yes" | "no" | "maybe") {
     setLoading(true);
     setError("");
+    setAiResult(null);
     try {
       await sendAction(room.code, playerId, { type: "answer", text: val });
       onRefresh();
@@ -67,6 +70,25 @@ export function Playing({
       setError(err instanceof Error ? err.message : "error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleAIAnswer() {
+    if (!lastQuestion || !room.currentTurnId) return;
+    setAiLoading(true);
+    setAiResult(null);
+    try {
+      const res = await getAIAnswer(
+        room.code,
+        playerId,
+        lastQuestion.text,
+        room.currentTurnId
+      );
+      setAiResult({ answer: res.answer, reason: res.reason, source: res.source });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "AI error");
+    } finally {
+      setAiLoading(false);
     }
   }
 
@@ -261,14 +283,65 @@ export function Playing({
                     onClick={() => handleAnswer(val)}
                     disabled={loading}
                     className="py-2.5 rounded-xl text-sm font-bold transition-all duration-150 disabled:opacity-40"
-                    style={{ background: bg, color, border: `1px solid ${border}` }}
+                    style={{
+                      background: aiResult?.answer === val ? bg.replace("0.12","0.25") : bg,
+                      color, border: `1px solid ${border}`,
+                      boxShadow: aiResult?.answer === val ? `0 0 12px ${bg}` : "none",
+                      transform: aiResult?.answer === val ? "scale(1.05)" : "none",
+                    }}
                     onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = aiResult?.answer === val ? "scale(1.05)" : ""; }}
                   >
                     {label}
+                    {aiResult?.answer === val && (
+                      <span className="ml-1 text-[10px] opacity-70">← AI</span>
+                    )}
                   </button>
                 ))}
               </div>
+
+              {/* AI Help button */}
+              <button
+                id="btn-ai-answer"
+                onClick={handleAIAnswer}
+                disabled={aiLoading || loading}
+                className="mt-3 w-full py-2 rounded-xl text-xs font-bold transition-all duration-200 disabled:opacity-40 flex items-center justify-center gap-2"
+                style={{
+                  background: aiLoading ? "rgba(56,189,248,0.08)" : "rgba(56,189,248,0.06)",
+                  border: "1px solid rgba(56,189,248,0.2)",
+                  color: "#38bdf8",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(56,189,248,0.12)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(56,189,248,0.06)"; }}
+              >
+                {aiLoading ? (
+                  <><span className="w-3 h-3 rounded-full border-2 border-cyan-400/30 border-t-cyan-400 animate-spin" />กำลังถาม AI...</>
+                ) : (
+                  <>🤖 ไม่รู้? ถาม AI ช่วยตอบ</>
+                )}
+              </button>
+
+              {/* AI result card */}
+              {aiResult && (
+                <div
+                  className="mt-2 rounded-xl p-3 animate-slide-up"
+                  style={{ background: "rgba(56,189,248,0.07)", border: "1px solid rgba(56,189,248,0.2)" }}
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="text-lg flex-shrink-0">🤖</span>
+                    <div>
+                      <p className="text-xs font-bold text-cyan-300 mb-0.5">
+                        AI แนะนำ:{" "}
+                        <span style={{ color: aiResult.answer === "yes" ? "#34d399" : aiResult.answer === "no" ? "#fb7185" : "#fbbf24" }}>
+                          {aiResult.answer === "yes" ? "✅ ใช่" : aiResult.answer === "no" ? "❌ ไม่ใช่" : "🤔 อาจจะ"}
+                        </span>
+                      </p>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">{aiResult.reason}</p>
+                      <p className="text-[10px] text-slate-600 mt-1">กดปุ่มด้านบนเพื่อยืนยันคำตอบ</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : isMyTurn && !room.waitingForAnswer ? (
             /* My turn — ask or guess */

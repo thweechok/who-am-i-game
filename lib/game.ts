@@ -6,7 +6,7 @@ import type {
 } from "./types";
 
 export const MAX_PLAYERS = 6;
-export const MIN_PLAYERS = 3;
+export const MIN_PLAYERS = 2;
 export const SCORE_BOARD = [3, 2, 1]; // 1st, 2nd, 3rd
 export const CHAT_MAX = 100; // keep last N messages
 

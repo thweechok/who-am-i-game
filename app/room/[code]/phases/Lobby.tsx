@@ -73,7 +73,7 @@ export function Lobby({
     setTimeout(() => setCopied(false), 1800);
   }
 
-  const canStart = room.players.length >= 3;
+  const canStart = room.players.length >= 2;
 
   return (
     <div className="w-full max-w-md animate-slide-up">
@@ -185,7 +185,7 @@ export function Lobby({
                 กำลังเริ่ม...
               </span>
             ) : !canStart ? (
-              `ต้องมีอย่างน้อย 3 คน (ขาดอีก ${3 - room.players.length} คน)`
+              `ต้องมีอย่างน้อย 2 คน (ขาดอีก ${2 - room.players.length} คน)`
             ) : (
               "🎮 เริ่มเกม"
             )}

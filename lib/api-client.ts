@@ -94,3 +94,16 @@ export async function sendAction(
 export async function nextRound(code: string, playerId: string) {
   return postJson(`/api/rooms/${code}/next-round`, { playerId });
 }
+
+export async function getAIAnswer(
+  code: string,
+  playerId: string,
+  question: string,
+  characterId: string
+): Promise<{ ok: boolean; answer: "yes" | "no" | "maybe"; reason: string; source: string; characterName: string }> {
+  return postJson(`/api/rooms/${code}/ai-answer`, {
+    playerId,
+    question,
+    characterId,
+  }) as Promise<{ ok: boolean; answer: "yes" | "no" | "maybe"; reason: string; source: string; characterName: string }>;
+}
