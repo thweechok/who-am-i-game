@@ -1,8 +1,65 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import type { PublicRoomState, ChatMessage } from "@/lib/types";
 import { sendAction, getAIAnswer } from "@/lib/api-client";
+
+/* ── Countdown Timer — own state so it never re-renders Playing ─────────── */
+const CountdownTimer = memo(function CountdownTimer({
+  roundStartedAt,
+  roundDurationSeconds,
+  onTimeUp,
+}: {
+  roundStartedAt: number;
+  roundDurationSeconds: number;
+  onTimeUp: () => void;
+}) {
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  useEffect(() => {
+    if (!roundStartedAt || roundStartedAt === 0) return;
+    const endTime = roundStartedAt + roundDurationSeconds * 1000;
+    function tick() {
+      const remaining = Math.max(0, endTime - Date.now());
+      setTimeLeft(remaining);
+      if (remaining === 0) onTimeUp();
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [roundStartedAt, roundDurationSeconds, onTimeUp]);
+
+  const totalMs = roundDurationSeconds * 1000;
+  const pct = totalMs > 0 ? (timeLeft / totalMs) * 100 : 0;
+  const mins = Math.floor(timeLeft / 60000);
+  const secs = Math.floor((timeLeft % 60000) / 1000);
+  const isUrgent = timeLeft > 0 && timeLeft < 60000;
+  const isDanger = timeLeft > 0 && timeLeft < 30000;
+
+  if (!roundStartedAt || roundStartedAt === 0) return null;
+
+  return (
+    <div className="mb-3 rounded-xl overflow-hidden" style={{ border: `1px solid ${isDanger ? "rgba(251,113,133,0.4)" : isUrgent ? "rgba(251,191,36,0.4)" : "rgba(255,255,255,0.07)"}` }}>
+      <div className="flex items-center justify-between px-3 py-2">
+        <span className="text-xs font-bold" style={{ color: isDanger ? "#fb7185" : isUrgent ? "#fbbf24" : "#64748b" }}>
+          {isDanger ? "🔴" : isUrgent ? "⚠️" : "⏱️"} เวลา
+        </span>
+        <span className="text-sm font-black tabular-nums" style={{ color: isDanger ? "#fb7185" : isUrgent ? "#fbbf24" : "#94a3b8" }}>
+          {timeLeft === 0 ? "หมดเวลา!" : `${mins}:${String(secs).padStart(2, "0")}`}
+        </span>
+      </div>
+      <div className="h-1" style={{ background: "rgba(255,255,255,0.05)" }}>
+        <div
+          className="h-full transition-all duration-1000"
+          style={{
+            width: `${pct}%`,
+            background: isDanger ? "#fb7185" : isUrgent ? "#fbbf24" : "#6366f1",
+          }}
+        />
+      </div>
+    </div>
+  );
+});
 
 export function Playing({
   room,
@@ -21,27 +78,11 @@ export function Playing({
   const [error, setError] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<{ answer: string; reason: string; source: string } | null>(null);
-  const [timeLeft, setTimeLeft] = useState<number>(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Countdown timer
-  useEffect(() => {
-    if (!room.roundStartedAt || room.roundStartedAt === 0) return;
-    const durationMs = (room.roundDurationSeconds ?? 420) * 1000;
-    const endTime = room.roundStartedAt + durationMs;
-
-    function tick() {
-      const remaining = Math.max(0, endTime - Date.now());
-      setTimeLeft(remaining);
-      if (remaining === 0) {
-        // Trigger time-up on server
-        sendAction(room.code, playerId, { type: "timeUp" }).catch(() => {});
-      }
-    }
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [room.roundStartedAt, room.roundDurationSeconds, room.code, playerId]);
+  const handleTimeUp = useCallback(() => {
+    sendAction(room.code, playerId, { type: "timeUp" }).catch(() => {});
+  }, [room.code, playerId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -122,6 +163,12 @@ export function Playing({
     <div className="w-full max-w-2xl grid gap-4 md:grid-cols-[1fr_320px] animate-fade-in">
       {/* ── Left column ── */}
       <div className="space-y-3">
+        {/* Timer */}
+        <CountdownTimer
+          roundStartedAt={room.roundStartedAt ?? 0}
+          roundDurationSeconds={room.roundDurationSeconds ?? 420}
+          onTimeUp={handleTimeUp}
+        />
         {/* My answer card */}
         <div
           className="p-4 text-center"
