@@ -237,13 +237,13 @@ export function Lobby({
           {/* Progress indicator */}
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
-              {Array.from({ length: Math.max(2, activePlayers.length) }).map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="w-2 h-2 rounded-full"
                   style={{ background: i < activePlayers.length ? "#d4a827" : "rgba(154,110,16,0.2)", boxShadow: i < activePlayers.length ? "0 0 4px #d4a827" : "none" }} />
               ))}
             </div>
             <span className="text-xs" style={{ color: "#9a6e10" }}>
-              {activePlayers.length} / {activePlayers.length < 2 ? "2" : activePlayers.length} คน
+              {activePlayers.length} / 6 คน
             </span>
           </div>
           <button

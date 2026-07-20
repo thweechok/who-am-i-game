@@ -104,8 +104,13 @@ export function Setup({
   const [aiDone, setAiDone]   = useState(false);
 
   const activePlayers  = room.players.filter(p => !p.isSpectator);
-  const readyCount     = activePlayers.filter(p => room.answers[p.id]).length;
-  const needAnswer     = activePlayers.filter(p => !room.answers[p.id]);
+  // BUG-22 fix: own answer is in room.myAnswer (not room.answers) due to toPublic stripping it
+  const readyCount     = activePlayers.filter(p =>
+    p.id === playerId ? room.myAnswer !== null : !!room.answers[p.id]
+  ).length;
+  const needAnswer     = activePlayers.filter(p =>
+    p.id === playerId ? room.myAnswer === null : !room.answers[p.id]
+  );
   const progressPct    = activePlayers.length > 0 ? Math.round((readyCount / activePlayers.length) * 100) : 0;
   const effectiveTopic = useCustom ? customTopic.trim() : selectedTopic;
 
@@ -314,9 +319,16 @@ export function Setup({
           </button>
         </div>
       )}
-      {!amHost && needAnswer.length === 0 && (
+      {!amHost && (
         <div className="p-4 text-center" style={rpgCard}>
-          <p className="text-sm font-bold" style={{ color: "#c8911a" }}>✅ ทุกคนพร้อม — รอ Host กดเริ่มเกม</p>
+          {needAnswer.length === 0 ? (
+            <p className="text-sm font-bold" style={{ color: "#c8911a" }}>✅ ทุกคนพร้อม — รอ Host กดเริ่มเกม</p>
+          ) : (
+            <>
+              <p className="text-sm font-bold" style={{ color: "#c8911a" }}>⏳ รอ Host สุ่มคำตอบ... ({readyCount}/{activePlayers.length} คน)</p>
+              <p className="text-xs mt-1" style={{ color: "#5a3a08" }}>เฉพาะเจ้าของห้องเท่านั้นที่สุ่มคำตอบได้</p>
+            </>
+          )}
         </div>
       )}
     </div>

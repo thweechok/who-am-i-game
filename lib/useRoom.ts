@@ -72,6 +72,8 @@ export function useRoom(code: string, playerId: string) {
   useEffect(() => {
     stoppedRef.current = false;
     consecutiveErrorsRef.current = 0;
+    // Cancel any pending timeout before starting a new poll cycle (prevents double-poll on status change)
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     // Kick off immediately
     poll();

@@ -56,8 +56,11 @@ export function Ended({
   const amHost = room.hostId === playerId;
   const [loading, setLoading] = useState(false);
 
-  const ranked = [...room.players].sort((a, b) => b.score - a.score);
+  const ranked = [...room.players].filter(p => !p.isSpectator).sort((a, b) => b.score - a.score);
   const winner = ranked[0];
+  // Round winner = first to guess correctly this round
+  const roundWinnerId = room.finishers[0] ?? null;
+  const iWonRound = roundWinnerId === playerId;
   const iWon = winner?.id === playerId;
 
   async function handleNext() {
@@ -118,7 +121,7 @@ export function Ended({
             ({winner.score} คะแนน)
           </p>
         )}
-        {iWon && (
+        {iWonRound && (
           <div
             className="relative mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold animate-pulse-success"
             style={{
@@ -127,7 +130,7 @@ export function Ended({
               border: "1px solid rgba(251,191,36,0.3)",
             }}
           >
-            ✨ คุณชนะรอบนี้!
+            ✨ คุณทายถูกก่อนใครรอบนี้!
           </div>
         )}
       </div>
@@ -228,8 +231,11 @@ export function Ended({
           เฉลยคำตอบ
         </div>
         <div className="space-y-2">
-          {room.players.map((p, i) => {
-            const ans = room.answers[p.id];
+          {room.players.filter(p => !p.isSpectator).map((p, i) => {
+            // allAnswers revealed for everyone in ended phase (see toPublic)
+            const ans = p.id === playerId
+              ? (room.myAnswer ?? room.allAnswers[p.id])
+              : room.allAnswers[p.id] ?? room.answers[p.id];
             return (
               <div
                 key={p.id}

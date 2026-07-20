@@ -107,7 +107,8 @@ export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
     roundStartedAt: room.roundStartedAt ?? 0,
     roundDurationSeconds: room.roundDurationSeconds ?? 420,
     isSpectator,
-    allAnswers: isSpectator ? { ...room.answers } : {},
+    // In ended phase all answers are revealed to everyone
+    allAnswers: (isSpectator || room.status === "ended") ? { ...room.answers } : {},
     createdAt: room.createdAt,
   };
 }
@@ -296,11 +297,8 @@ export function applyAction(
       text: payload.text,
     });
     room.waitingForAnswer = false;
-    room.questionsThisTurn = (room.questionsThisTurn ?? 0); // keep count, reset on advanceTurn
-    advanceTurn(room);
-    if (isRoundOver(room)) {
-      endRound(room);
-    }
+    // Turn STAYS with current player — they can ask again or guess/pass
+    // isRoundOver check is skipped here since no guessedThisRound changed
     return { ok: true };
   }
 
@@ -309,10 +307,13 @@ export function applyAction(
     if (player.guessedThisRound) {
       return { ok: false, error: "คุณทายไปแล้วครั้งหนึ่งรอบนี้" };
     }
-    // If someone guesses while we're waiting for an answer, drop the wait
-    // (the question is implicitly abandoned)
+    // If someone guesses while we're waiting for an answer, abandon the pending question
     if (room.waitingForAnswer) {
       room.waitingForAnswer = false;
+      pushChat(room, {
+        fromId: null, fromName: "ระบบ", type: "system",
+        text: `⚠️ ${player.name} ทาย — ยกเลิกคำถามที่ค้างอยู่`,
+      });
     }
 
     const guess = payload.text.trim().slice(0, 100);
@@ -383,6 +384,10 @@ export function applyAction(
     }
     if (room.waitingForAnswer) {
       room.waitingForAnswer = false;
+      pushChat(room, {
+        fromId: null, fromName: "ระบบ", type: "system",
+        text: `➡️ ${player.name} ผ่าน — ยกเลิกคำถามที่ค้างอยู่`,
+      });
     }
     player.guessedThisRound = true; // mark as used up
     pushChat(room, {

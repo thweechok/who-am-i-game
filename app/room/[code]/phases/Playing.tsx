@@ -80,9 +80,14 @@ export function Playing({
   const [aiResult, setAiResult] = useState<{ answer: string; reason: string; source: string } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  const amHost = room.hostId === playerId;
+
   const handleTimeUp = useCallback(() => {
-    sendAction(room.code, playerId, { type: "timeUp" }).catch(() => {});
-  }, [room.code, playerId]);
+    // Only host or current-turn player sends timeUp to avoid race condition
+    if (isMyTurn || amHost) {
+      sendAction(room.code, playerId, { type: "timeUp" }).catch(() => {});
+    }
+  }, [room.code, playerId, isMyTurn, amHost]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
