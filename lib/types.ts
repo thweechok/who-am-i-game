@@ -40,6 +40,8 @@ export interface RoomState {
   players: Player[];
   /** playerId -> their answer (the "thing on their head") */
   answers: Record<string, string>;
+  /** playerId -> image URL for their answer (optional) */
+  answerImages: Record<string, string>;
   /** order of play by playerId */
   turnOrder: string[];
   currentTurnIdx: number;
@@ -71,6 +73,8 @@ export interface PublicRoomState {
   players: Player[];
   /** myAnswer is null/hidden; others' answers visible */
   answers: Record<string, string>;
+  /** image URLs for answers */
+  answerImages: Record<string, string>;
   myAnswer: string | null;
   turnOrder: string[];
   currentTurnIdx: number;

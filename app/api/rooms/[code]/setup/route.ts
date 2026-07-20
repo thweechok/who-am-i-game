@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getRoom, saveRoom } from "@/lib/redis";
 import { findPlayer } from "@/lib/game";
 import { generateAnswers } from "@/lib/openai";
+import { getImagesForAnswers } from "@/lib/wikipedia";
 
 export const dynamic = "force-dynamic";
 
@@ -65,25 +66,24 @@ export async function POST(
     need.forEach((p, i) => {
       room.answers[p.id] = pool[i % pool.length] || "ไม่ทราบ";
     });
+    // Fetch images from Wikipedia (non-blocking, best-effort)
+    try {
+      const newAnswers: Record<string, string> = {};
+      need.forEach((p, i) => { newAnswers[p.id] = pool[i % pool.length] || ""; });
+      const images = await getImagesForAnswers(newAnswers);
+      room.answerImages = { ...(room.answerImages ?? {}), ...images };
+    } catch {
+      // Images are optional — don't fail the setup
+    }
     await saveRoom(room);
     return Response.json({ ok: true, assigned: need.length, source });
   }
 
-  // --- manual set mode ---
+  // --- manual set mode (deprecated but kept for backwards compatibility) ---
   const setFor = body.setFor;
   const answer = (body.answer ?? "").toString().trim();
   if (!setFor || !answer) {
-    return Response.json({ error: "ต้องระบุ setFor และ answer" }, { status: 400 });
+    return Response.json({ error: "ใช้โหมด AI สุ่มเท่านั้น" }, { status: 400 });
   }
-  if (!room.players.some((p) => p.id === setFor)) {
-    return Response.json({ error: "ไม่พบผู้เล่นเป้าหมาย" }, { status: 400 });
-  }
-  // a player cannot set their own answer
-  if (setFor === playerId) {
-    return Response.json({ error: "ตั้งคำตอบให้ตัวเองไม่ได้" }, { status: 400 });
-  }
-  room.setupMode = "manual";
-  room.answers[setFor] = answer.slice(0, 60);
-  await saveRoom(room);
-  return Response.json({ ok: true });
+  return Response.json({ error: "โหมดตั้งเองถูกยกเลิกแล้ว ใช้ AI สุ่มแทน" }, { status: 400 });
 }

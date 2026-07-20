@@ -27,6 +27,7 @@ export function emptyRoom(code: string, host: Player): RoomState {
     topic: "",
     players: [host],
     answers: {},
+    answerImages: {},
     turnOrder: [],
     currentTurnIdx: 0,
     round: 0,
@@ -109,6 +110,7 @@ export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
     isSpectator,
     // In ended phase all answers are revealed to everyone
     allAnswers: (isSpectator || room.status === "ended") ? { ...room.answers } : {},
+    answerImages: room.answerImages ?? {},
     createdAt: room.createdAt,
   };
 }
@@ -461,6 +463,7 @@ export function startNextRound(room: RoomState): { ok: boolean; error?: string }
   }
   // clear answers — host must re-run AI setup
   room.answers = {};
+  room.answerImages = {};
   room.setupMode = "ai";
   room.topic = "";
   room.difficulty = "medium";

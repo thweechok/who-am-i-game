@@ -4,6 +4,38 @@ import { useState } from "react";
 import type { PublicRoomState } from "@/lib/types";
 import { startGame, sendAction } from "@/lib/api-client";
 
+const lobbyStyles = `
+  @keyframes slideUpFade {
+    0% { opacity: 0; transform: translateY(15px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes popIn {
+    0% { opacity: 0; transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes goldenShimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  .animate-stagger-1 { animation: slideUpFade 0.5s ease-out 0.1s both; }
+  .animate-stagger-2 { animation: slideUpFade 0.5s ease-out 0.2s both; }
+  .animate-stagger-3 { animation: slideUpFade 0.5s ease-out 0.3s both; }
+  
+  .player-join {
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+  
+  .room-code-shimmer {
+    background: linear-gradient(90deg, #fde68a 20%, #ffffff 50%, #fde68a 80%);
+    background-size: 200% auto;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: goldenShimmer 3s linear infinite;
+  }
+`;
+
 /* ── RPG style tokens ─────────────────────────────────────── */
 const rpgCard = {
   background: "linear-gradient(180deg, #1c0e04 0%, #0d0700 60%, #1c0e04 100%)",
@@ -44,7 +76,7 @@ function PlayerRow({
 }) {
   const initial = player.name.charAt(0).toUpperCase();
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded transition-all"
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded transition-all player-join"
       style={{
         background: isYou ? "rgba(212,168,39,0.06)" : "rgba(0,0,0,0.2)",
         border: isYou ? "1px solid rgba(212,168,39,0.25)" : "1px solid rgba(154,110,16,0.15)",
@@ -120,15 +152,16 @@ export function Lobby({
 
   return (
     <div className="w-full max-w-md animate-slide-up space-y-3">
+      <style>{lobbyStyles}</style>
 
       {/* ── Room Code Card ── */}
-      <div className="p-5" style={rpgCard}>
+      <div className="p-5 animate-stagger-1" style={rpgCard}>
         <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: "#9a6e10" }}>
           ⚔️ รหัสห้อง
         </p>
         <div className="flex items-center gap-3">
-          <div className="flex-1 font-mono text-4xl font-black tracking-[0.4em]"
-            style={{ color: "#fde68a", textShadow: "0 0 20px rgba(212,168,39,0.4)" }}>
+          <div className="flex-1 font-mono text-4xl font-black tracking-[0.4em] room-code-shimmer"
+            style={{ textShadow: "0 0 20px rgba(212,168,39,0.4)" }}>
             {room.code}
           </div>
           <button onClick={copyInvite} id="btn-copy-invite"
@@ -157,7 +190,7 @@ export function Lobby({
       </div>
 
       {/* ── Players Card ── */}
-      <div className="p-4" style={rpgCard}>
+      <div className="p-4 animate-stagger-2" style={rpgCard}>
         <div className="flex items-center justify-between mb-3">
           <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#9a6e10" }}>
             ผู้เล่น
@@ -192,7 +225,7 @@ export function Lobby({
 
       {/* ── Settings (Host only) ── */}
       {amHost && (
-        <div className="p-4" style={rpgCard}>
+        <div className="p-4 animate-stagger-3" style={rpgCard}>
           <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: "#9a6e10" }}>
             ⚙️ จำกัดคำถามต่อตา
           </p>
@@ -233,7 +266,7 @@ export function Lobby({
 
       {/* ── Start / Wait ── */}
       {amHost ? (
-        <div className="p-4 space-y-3" style={rpgCard}>
+        <div className="p-4 space-y-3 animate-stagger-3" style={rpgCard}>
           {/* Progress indicator */}
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
@@ -270,7 +303,7 @@ export function Lobby({
           )}
         </div>
       ) : (
-        <div className="p-4 text-center" style={rpgCard}>
+        <div className="p-4 text-center animate-stagger-3" style={rpgCard}>
           <div className="flex items-center justify-center gap-2">
             <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#d4a827" }} />
             <span className="text-sm font-bold" style={{ color: "#c8911a" }}>รอ Host เริ่มเกม...</span>

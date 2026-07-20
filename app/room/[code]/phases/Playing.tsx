@@ -300,21 +300,30 @@ export function Playing({
                   >
                     {rank + 1}
                   </span>
-                  <span
-                    className="flex-1 text-sm font-medium truncate"
-                    style={{
-                      color: p.guessedCorrectly
-                        ? "#34d399"
-                        : p.guessedThisRound
-                        ? "#475569"
-                        : "#cbd5e1",
-                      textDecoration: p.guessedThisRound && !p.guessedCorrectly ? "line-through" : "none",
-                    }}
-                  >
-                    {p.name}
-                    {p.id === playerId && <span className="ml-1 text-indigo-400 text-xs">(คุณ)</span>}
-                    {p.guessedCorrectly && <span className="ml-1 text-[10px]">✅</span>}
-                  </span>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {/* Answer image for other players */}
+                    {p.id !== playerId && room.answerImages?.[p.id] && (
+                      <img src={room.answerImages[p.id]} alt=""
+                        className="w-7 h-7 rounded object-cover flex-shrink-0"
+                        style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                    )}
+                    <span
+                      className="text-sm font-medium truncate"
+                      style={{
+                        color: p.guessedCorrectly
+                          ? "#34d399"
+                          : p.guessedThisRound
+                          ? "#475569"
+                          : "#cbd5e1",
+                        textDecoration: p.guessedThisRound && !p.guessedCorrectly ? "line-through" : "none",
+                      }}
+                    >
+                      {p.name}
+                      {p.id === playerId && <span className="ml-1 text-indigo-400 text-xs">(คุณ)</span>}
+                      {p.guessedCorrectly && <span className="ml-1 text-[10px]">✅</span>}
+                    </span>
+                  </div>
                   <span className="font-mono font-bold text-sm" style={{ color: "#818cf8" }}>
                     {p.score}
                   </span>

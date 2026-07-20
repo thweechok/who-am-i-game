@@ -236,17 +236,23 @@ export function Ended({
             const ans = p.id === playerId
               ? (room.myAnswer ?? room.allAnswers[p.id])
               : room.allAnswers[p.id] ?? room.answers[p.id];
+            const imgUrl = room.answerImages?.[p.id];
             return (
               <div
                 key={p.id}
-                className="flex items-center justify-between rounded-xl px-3 py-2.5 animate-fade-in"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 animate-fade-in"
                 style={{
                   background: "rgba(255,255,255,0.03)",
                   border: "1px solid rgba(255,255,255,0.06)",
                   animationDelay: `${i * 60}ms`,
                 }}
               >
-                <span className="text-sm text-slate-400">{p.name}</span>
+                {imgUrl && (
+                  <img src={imgUrl} alt={ans ?? ""} className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                    style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                )}
+                <span className="text-sm text-slate-400 flex-1">{p.name}</span>
                 <span
                   className="text-sm font-semibold"
                   style={{ color: "#818cf8" }}

@@ -56,18 +56,7 @@ export async function startGame(
   return postJson(`/api/rooms/${code}/start`, { playerId, phase });
 }
 
-export async function setupManual(
-  code: string,
-  playerId: string,
-  setFor: string,
-  answer: string
-) {
-  return postJson(`/api/rooms/${code}/setup`, {
-    playerId,
-    setFor,
-    answer,
-  });
-}
+/** @deprecated Manual mode removed — use setupAI only */
 
 export async function setupAI(
   code: string,

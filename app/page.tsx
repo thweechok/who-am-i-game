@@ -211,11 +211,11 @@ const GAMES = [
 ];
 
 /* ── Play Modal ─────────────────────────────────────────────────────────── */
-function PlayModal({ game, onClose }: { game: typeof GAMES[0]; onClose: () => void }) {
+function PlayModal({ game, onClose, initialRoomCode }: { game: typeof GAMES[0]; onClose: () => void; initialRoomCode?: string }) {
   const router = useRouter();
-  const [mode, setMode]       = useState<"create" | "join">("create");
+  const [mode, setMode]       = useState<"create" | "join">(initialRoomCode ? "join" : "create");
   const [name, setName]       = useState("");
-  const [code, setCode]       = useState("");
+  const [code, setCode]       = useState(initialRoomCode ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
 
@@ -555,7 +555,7 @@ function LauncherContent() {
         </div>
       </div>
 
-      {showModal && <PlayModal game={selected} onClose={() => setShowModal(false)} />}
+      {showModal && <PlayModal game={selected} onClose={() => setShowModal(false)} initialRoomCode={searchParams.get("room") ?? undefined} />}
       {showHowTo && <HowToPlayModal onClose={() => setShowHowTo(false)} />}
     </div>
   );

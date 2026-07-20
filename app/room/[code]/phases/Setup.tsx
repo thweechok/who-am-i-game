@@ -4,6 +4,48 @@ import { useState } from "react";
 import type { PublicRoomState } from "@/lib/types";
 import { setupAI, startGame } from "@/lib/api-client";
 
+const setupStyles = `
+  @keyframes slideUpFade {
+    0% { opacity: 0; transform: translateY(15px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 15px rgba(212,168,39,0.4), inset 0 2px 0 rgba(255,210,80,0.25), 0 6px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(212,168,39,0.4); }
+    50% { box-shadow: 0 0 25px rgba(255,200,80,0.7), inset 0 2px 0 rgba(255,210,80,0.5), 0 6px 24px rgba(0,0,0,0.8), 0 0 0 1px rgba(212,168,39,0.6); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  .animate-stagger-1 { animation: slideUpFade 0.5s ease-out 0.1s both; }
+  .animate-stagger-2 { animation: slideUpFade 0.5s ease-out 0.2s both; }
+  .animate-stagger-3 { animation: slideUpFade 0.5s ease-out 0.3s both; }
+  
+  .topic-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(212,168,39,0.3);
+    border-color: #d4a827 !important;
+    z-index: 10;
+  }
+  .ai-btn {
+    animation: pulseGlow 2.5s infinite;
+  }
+  .start-btn {
+    animation: pulseGlow 1.5s infinite;
+    text-shadow: 0 0 10px rgba(255,200,80,0.8);
+  }
+  .progress-shimmer {
+    background: linear-gradient(90deg, #9a6e10 25%, #f5d680 50%, #9a6e10 75%);
+    background-size: 200% auto;
+    animation: shimmer 2.5s linear infinite;
+  }
+  .progress-shimmer-full {
+    background: linear-gradient(90deg, #d4a827 25%, #fffbeb 50%, #d4a827 75%);
+    background-size: 200% auto;
+    animation: shimmer 2s linear infinite;
+  }
+`;
+
 type Difficulty = "easy" | "medium" | "hard";
 
 const TOPIC_PRESETS = [
@@ -144,21 +186,22 @@ export function Setup({
 
   return (
     <div className="w-full max-w-xl animate-slide-up space-y-3">
+      <style>{setupStyles}</style>
 
       {/* ── Progress bar ── */}
-      <div className="p-4" style={rpgCard}>
+      <div className="p-4 animate-stagger-1" style={rpgCard}>
         <div className="flex justify-between items-center mb-2">
           <span className="text-xs font-bold" style={{ color: "#c8911a" }}>⚔️ ความพร้อม</span>
           <span className="text-xs font-black" style={{ color: "#f5d680" }}>{readyCount}/{activePlayers.length} คน</span>
         </div>
         <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #5a3a08" }}>
-          <div className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%`, background: progressPct === 100 ? "linear-gradient(90deg,#d4a827,#f5d680)" : "linear-gradient(90deg,#9a6e10,#c8911a)" }} />
+          <div className={`h-full rounded-full transition-all duration-500 ${progressPct === 100 ? 'progress-shimmer-full' : 'progress-shimmer'}`}
+            style={{ width: `${progressPct}%`, background: progressPct === 0 ? "transparent" : undefined }} />
         </div>
       </div>
 
       {/* ── AI Setup (Host only sees controls) ── */}
-      <div className="p-5 space-y-4" style={rpgCard}>
+      <div className="p-5 space-y-4 animate-stagger-2" style={rpgCard}>
         <div className="flex items-center gap-2 mb-1">
           <span className="text-lg">✨</span>
           <span className="text-sm font-black" style={{ color: "#f5d680", textShadow: "0 0 8px rgba(255,200,80,0.3)" }}>
@@ -203,7 +246,7 @@ export function Setup({
                   return (
                     <button key={topic.value}
                       onClick={() => { setSelectedTopic(topic.value); setUseCustom(false); }}
-                      className="p-2.5 flex flex-col items-center gap-1 text-center transition-all duration-150"
+                      className="p-2.5 flex flex-col items-center gap-1 text-center transition-all duration-150 topic-btn"
                       style={isActive ? {
                         ...rpgBtn,
                         background: "linear-gradient(180deg, #3a2200 0%, #2a1600 50%, #3a2200 100%)",
@@ -222,7 +265,7 @@ export function Setup({
                   );
                 })}
                 <button onClick={() => setUseCustom(true)}
-                  className="p-2.5 flex flex-col items-center gap-1 text-center transition-all"
+                  className="p-2.5 flex flex-col items-center gap-1 text-center transition-all topic-btn"
                   style={useCustom ? {
                     ...rpgBtn,
                     background: "linear-gradient(180deg, #3a2200 0%, #2a1600 50%, #3a2200 100%)",
@@ -275,7 +318,7 @@ export function Setup({
               </div>
             )}
             <button onClick={handleAI} disabled={loading || !effectiveTopic}
-              className="w-full py-4 text-sm font-black tracking-wider transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-4 text-sm font-black tracking-wider transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed ai-btn"
               style={rpgBtnPrimary}>
               {loading ? "🤖 AI กำลังสุ่ม..." : "✨ สุ่มคำตอบให้ทุกคน"}
             </button>
@@ -306,21 +349,21 @@ export function Setup({
 
       {/* ── Start Game (host only) ── */}
       {amHost && (
-        <div className="p-4 space-y-2" style={rpgCard}>
+        <div className="p-4 space-y-2 animate-stagger-3" style={rpgCard}>
           {needAnswer.length > 0 && (
             <p className="text-xs text-center pb-1" style={{ color: "#9a6e10" }}>
               ⚠️ กด "สุ่มคำตอบให้ทุกคน" ด้านบนก่อน ({readyCount}/{activePlayers.length} พร้อม)
             </p>
           )}
           <button onClick={handleStart} disabled={loading || needAnswer.length > 0}
-            className="w-full py-4 text-base font-black tracking-wider transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 text-base font-black tracking-wider transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed start-btn"
             style={rpgBtnPrimary}>
             ⚔️ เริ่มเกม!
           </button>
         </div>
       )}
       {!amHost && (
-        <div className="p-4 text-center" style={rpgCard}>
+        <div className="p-4 text-center animate-stagger-3" style={rpgCard}>
           {needAnswer.length === 0 ? (
             <p className="text-sm font-bold" style={{ color: "#c8911a" }}>✅ ทุกคนพร้อม — รอ Host กดเริ่มเกม</p>
           ) : (
