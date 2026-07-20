@@ -226,6 +226,27 @@ export function applyAction(
   playerId: string,
   payload: ActionPayload
 ): { ok: boolean; error?: string } {
+  // ──── SET MAX QUESTIONS (host only, any status) ────
+  // Must be checked BEFORE the playing-status guard
+  if (payload.type === "setMaxQuestions") {
+    if (room.hostId !== playerId) {
+      return { ok: false, error: "เฉพาะ host เท่านั้น" };
+    }
+    room.maxQuestionsPerTurn = Math.max(0, Math.min(20, Number(payload.value ?? 5)));
+    return { ok: true };
+  }
+
+  // ──── TIME UP (works from any status with timer) ────
+  if (payload.type === "timeUp") {
+    const startedAt = room.roundStartedAt ?? 0;
+    const durMs = (room.roundDurationSeconds ?? 420) * 1000;
+    if (startedAt > 0 && Date.now() - startedAt >= durMs) {
+      endRound(room);
+      return { ok: true };
+    }
+    return { ok: false, error: "ยังไม่หมดเวลา" };
+  }
+
   if (room.status !== "playing") {
     return { ok: false, error: "ยังไม่ได้เริ่มเล่น" };
   }
@@ -405,26 +426,6 @@ export function applyAction(
     return { ok: true };
   }
 
-  // ──── SET MAX QUESTIONS (host only, any status) ────
-  if (payload.type === "setMaxQuestions") {
-    if (room.hostId !== playerId) {
-      return { ok: false, error: "เฉพาะ host เท่านั้น" };
-    }
-    room.maxQuestionsPerTurn = Math.max(0, Math.min(20, Number(payload.value ?? 5)));
-    return { ok: true };
-  }
-
-  // ──── TIME UP ────
-  if (payload.type === "timeUp") {
-    const startedAt = room.roundStartedAt ?? 0;
-    const durMs = (room.roundDurationSeconds ?? 420) * 1000;
-    if (startedAt > 0 && Date.now() - startedAt >= durMs) {
-      endRound(room);
-      return { ok: true };
-    }
-    return { ok: false, error: "ยังไม่หมดเวลา" };
-  }
-
   return { ok: false, error: "action ไม่ถูกต้อง" };
 }
 
@@ -438,7 +439,7 @@ function endRound(room: RoomState) {
     type: "system",
     text: "🎉 จบรอบ! เปิดเผยคำตอบทั้งหมดแล้ว",
   });
-  for (const p of room.players) {
+  for (const p of room.players.filter(p => !p.isSpectator)) {
     const ans = room.answers[p.id] ?? "?";
     pushChat(room, {
       fromId: null,

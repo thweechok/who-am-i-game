@@ -8,13 +8,13 @@ export const dynamic = "force-dynamic";
 
 interface SetupBody {
   playerId?: string;
-  /** set one player's answer (manual mode) */
-  setFor?: string; // target playerId
-  answer?: string;
   /** AI mode: request N answers for a topic, auto-assign */
   aiTopic?: string;
   aiAssign?: boolean;
   difficulty?: "easy" | "medium" | "hard";
+  /** @deprecated manual mode fields — no longer used */
+  setFor?: string;
+  answer?: string;
 }
 
 /** POST /api/rooms/[code]/setup
@@ -66,24 +66,28 @@ export async function POST(
     need.forEach((p, i) => {
       room.answers[p.id] = pool[i % pool.length] || "ไม่ทราบ";
     });
-    // Fetch images from Wikipedia (non-blocking, best-effort)
-    try {
-      const newAnswers: Record<string, string> = {};
-      need.forEach((p, i) => { newAnswers[p.id] = pool[i % pool.length] || ""; });
-      const images = await getImagesForAnswers(newAnswers);
-      room.answerImages = { ...(room.answerImages ?? {}), ...images };
-    } catch {
-      // Images are optional — don't fail the setup
-    }
+    // Fetch images from Wikipedia (fire-and-forget, non-blocking)
+    // Save room first so setup completes instantly
     await saveRoom(room);
+    
+    // Background: fetch images and save again
+    const newAnswers: Record<string, string> = {};
+    need.forEach((p, i) => { newAnswers[p.id] = pool[i % pool.length] || ""; });
+    getImagesForAnswers(newAnswers).then(async (images) => {
+      if (Object.keys(images).length > 0) {
+        try {
+          const freshRoom = await getRoom(code);
+          if (freshRoom) {
+            freshRoom.answerImages = { ...(freshRoom.answerImages ?? {}), ...images };
+            await saveRoom(freshRoom);
+          }
+        } catch { /* best-effort */ }
+      }
+    }).catch(() => { /* images are optional */ });
+    
     return Response.json({ ok: true, assigned: need.length, source });
   }
 
-  // --- manual set mode (deprecated but kept for backwards compatibility) ---
-  const setFor = body.setFor;
-  const answer = (body.answer ?? "").toString().trim();
-  if (!setFor || !answer) {
-    return Response.json({ error: "ใช้โหมด AI สุ่มเท่านั้น" }, { status: 400 });
-  }
-  return Response.json({ error: "โหมดตั้งเองถูกยกเลิกแล้ว ใช้ AI สุ่มแทน" }, { status: 400 });
+  // All other modes (manual) have been removed — AI only
+  return Response.json({ error: "ใช้โหมด AI สุ่มเท่านั้น" }, { status: 400 });
 }
