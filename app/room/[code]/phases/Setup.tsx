@@ -15,7 +15,7 @@ export function Setup({
   playerId: string;
   onRefresh: () => void;
 }) {
-  const isHost = room.hostId === playerId;
+  const amHost = room.hostId === playerId;
   const [tab, setTab] = useState<"manual" | "ai">("manual");
   const [topic, setTopic] = useState("ดารา");
   const [selectedTarget, setSelectedTarget] = useState<string>("");
@@ -26,18 +26,14 @@ export function Setup({
 
   const others = room.players.filter((p) => p.id !== playerId);
   const needAnswer = room.players.filter((p) => !room.answers[p.id]);
+  const readyCount = room.players.length - needAnswer.length;
+  const progressPct = Math.round((readyCount / room.players.length) * 100);
 
   async function handleManual(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!selectedTarget) {
-      setError("เลือกผู้เล่นที่จะตั้งคำตอบให้");
-      return;
-    }
-    if (!answerInput.trim()) {
-      setError("พิมพ์คำตอบ");
-      return;
-    }
+    if (!selectedTarget) { setError("เลือกผู้เล่นที่จะตั้งคำตอบให้"); return; }
+    if (!answerInput.trim()) { setError("พิมพ์คำตอบ"); return; }
     setLoading(true);
     try {
       await setupManual(room.code, playerId, selectedTarget, answerInput);
@@ -52,14 +48,13 @@ export function Setup({
   }
 
   async function handleAI() {
-    setError("");
-    setAiNote("");
+    setError(""); setAiNote("");
     setLoading(true);
     try {
       const res = await setupAI(room.code, playerId, topic);
       setAiNote(
         res.source === "ai"
-          ? `✓ AI สุ่มให้ ${res.assigned} คนแล้ว`
+          ? `✨ AI สุ่มให้ ${res.assigned} คนแล้ว`
           : `✓ ใช้รายการสำรอง (AI ไม่พร้อมใช้งาน) — สุ่มให้ ${res.assigned} คน`
       );
       onRefresh();
@@ -71,8 +66,7 @@ export function Setup({
   }
 
   async function handleStartPlaying() {
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
       await startGame(room.code, playerId, "playing");
       onRefresh();
@@ -83,67 +77,117 @@ export function Setup({
     }
   }
 
+  const inputStyle = {
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "0.6rem",
+    color: "#e2e8f0",
+    width: "100%",
+    padding: "0.6rem 0.875rem",
+    fontSize: "0.875rem",
+    outline: "none",
+    transition: "border-color 0.2s, box-shadow 0.2s",
+  };
+
+  function focusStyle(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) {
+    e.currentTarget.style.borderColor = "#6366f1";
+    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(99,102,241,0.2)";
+  }
+  function blurStyle(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) {
+    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+    e.currentTarget.style.boxShadow = "none";
+  }
+
   return (
-    <div className="w-full max-w-md">
-      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          เตรียมเกม
-        </h2>
-        <p className="mt-1 text-sm text-zinc-500">
+    <div className="w-full max-w-md animate-slide-up">
+      <div
+        className="rounded-2xl p-6"
+        style={{
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+        }}
+      >
+        <h2 className="text-lg font-bold text-slate-100">เตรียมเกม</h2>
+        <p className="text-xs text-slate-500 mt-1 mb-5">
           ตั้งคำตอบให้ผู้เล่นคนอื่น — แต่ละคนต้องมีคำตอบ 1 อย่าง
         </p>
 
-        {/* progress */}
-        <div className="mt-4 rounded-lg bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-800/60">
-          <span className="text-zinc-500">ตั้งคำตอบแล้ว:</span>{" "}
-          <span className="font-medium text-zinc-900 dark:text-zinc-100">
-            {room.players.length - needAnswer.length}/{room.players.length}
-          </span>
-          {needAnswer.length > 0 && (
-            <span className="ml-2 text-zinc-400">
-              (ยังขาด: {needAnswer.map((p) => p.name).join(", ")})
+        {/* Progress bar */}
+        <div className="mb-5">
+          <div className="flex items-center justify-between text-xs mb-2">
+            <span className="text-slate-500">ความคืบหน้า</span>
+            <span className="font-semibold text-slate-300">
+              {readyCount}/{room.players.length} คน
             </span>
+          </div>
+          <div
+            className="relative h-2 rounded-full overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.07)" }}
+          >
+            <div
+              className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
+              style={{
+                width: `${progressPct}%`,
+                background: progressPct === 100
+                  ? "linear-gradient(90deg, #34d399, #10b981)"
+                  : "linear-gradient(90deg, #6366f1, #8b5cf6)",
+                boxShadow: progressPct === 100
+                  ? "0 0 10px rgba(52,211,153,0.5)"
+                  : "0 0 10px rgba(99,102,241,0.5)",
+              }}
+            />
+          </div>
+          {needAnswer.length > 0 && (
+            <p className="mt-2 text-xs text-slate-600">
+              ยังขาด: {needAnswer.map((p) => p.name).join(", ")}
+            </p>
           )}
         </div>
 
-        {/* tabs */}
-        <div className="mt-5 grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800">
-          <button
-            onClick={() => setTab("manual")}
-            className={`py-2 rounded-lg text-sm font-medium transition ${
-              tab === "manual"
-                ? "bg-white text-indigo-600 shadow-sm dark:bg-zinc-950 dark:text-indigo-400"
-                : "text-zinc-500"
-            }`}
-          >
-            ตั้งเอง
-          </button>
-          <button
-            onClick={() => setTab("ai")}
-            className={`py-2 rounded-lg text-sm font-medium transition ${
-              tab === "ai"
-                ? "bg-white text-indigo-600 shadow-sm dark:bg-zinc-950 dark:text-indigo-400"
-                : "text-zinc-500"
-            }`}
-          >
-            สุ่ม AI
-          </button>
+        {/* Tabs */}
+        <div
+          className="flex gap-1 p-1 rounded-xl mb-5"
+          style={{ background: "rgba(255,255,255,0.04)" }}
+        >
+          {(["manual", "ai"] as const).map((t) => (
+            <button
+              key={t}
+              id={`tab-setup-${t}`}
+              onClick={() => setTab(t)}
+              className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+              style={
+                tab === t
+                  ? {
+                      background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                      color: "#fff",
+                      boxShadow: "0 4px 12px rgba(99,102,241,0.35)",
+                    }
+                  : { color: "#64748b" }
+              }
+            >
+              {t === "manual" ? "✏️ ตั้งเอง" : "✨ สุ่ม AI"}
+            </button>
+          ))}
         </div>
 
+        {/* Manual */}
         {tab === "manual" ? (
-          <form onSubmit={handleManual} className="mt-4 space-y-3">
+          <form onSubmit={handleManual} className="space-y-3 animate-fade-in">
             <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1">
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                 ตั้งให้ใคร
               </label>
               <select
                 value={selectedTarget}
                 onChange={(e) => setSelectedTarget(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                style={inputStyle}
+                onFocus={focusStyle}
+                onBlur={blurStyle}
               >
-                <option value="">— เลือกผู้เล่น —</option>
+                <option value="" style={{ background: "#0e1022" }}>— เลือกผู้เล่น —</option>
                 {others.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.id} value={p.id} style={{ background: "#0e1022" }}>
                     {p.name}
                     {room.answers[p.id] ? " ✓" : ""}
                   </option>
@@ -151,7 +195,7 @@ export function Setup({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1">
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                 คำตอบ (บุคคล/ตัวละคร/สิ่งของ)
               </label>
               <input
@@ -159,27 +203,35 @@ export function Setup({
                 onChange={(e) => setAnswerInput(e.target.value)}
                 maxLength={60}
                 placeholder="เช่น อัลเบิร์ต ไอน์สไตน์"
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                style={inputStyle}
+                onFocus={focusStyle}
+                onBlur={blurStyle}
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all duration-200"
+              style={{
+                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                boxShadow: "0 4px 16px rgba(99,102,241,0.3)",
+              }}
             >
-              {loading ? "บันทึก..." : "ตั้งคำตอบ"}
+              {loading ? "กำลังบันทึก..." : "💾 ตั้งคำตอบ"}
             </button>
           </form>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className="space-y-3 animate-fade-in">
             <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1">
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                 หัวข้อ
               </label>
               <input
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                style={inputStyle}
+                onFocus={focusStyle}
+                onBlur={blurStyle}
               />
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {TOPIC_SUGGESTIONS.map((t) => (
@@ -187,7 +239,12 @@ export function Setup({
                     key={t}
                     type="button"
                     onClick={() => setTopic(t)}
-                    className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+                    className="px-3 py-1 rounded-full text-xs font-medium transition-all duration-150"
+                    style={
+                      topic === t
+                        ? { background: "rgba(99,102,241,0.25)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.4)" }
+                        : { background: "rgba(255,255,255,0.05)", color: "#64748b", border: "1px solid rgba(255,255,255,0.08)" }
+                    }
                   >
                     {t}
                   </button>
@@ -195,33 +252,64 @@ export function Setup({
               </div>
             </div>
             <button
+              id="btn-ai-assign"
               onClick={handleAI}
               disabled={loading}
-              className="w-full rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all duration-200"
+              style={{
+                background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+                boxShadow: "0 4px 16px rgba(139,92,246,0.35)",
+              }}
             >
-              {loading ? "กำลังสุ่ม..." : "สุ่มคำตอบให้ทุกคนที่ยังไม่มี"}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  กำลังสุ่ม...
+                </span>
+              ) : "✨ สุ่มคำตอบให้ทุกคนที่ยังไม่มี"}
             </button>
             {aiNote && (
-              <p className="text-xs text-emerald-600 dark:text-emerald-400">
+              <div
+                className="rounded-xl px-3 py-2.5 text-xs font-medium animate-fade-in"
+                style={{ background: "rgba(52,211,153,0.1)", color: "#34d399", border: "1px solid rgba(52,211,153,0.2)" }}
+              >
                 {aiNote}
-              </p>
+              </div>
             )}
           </div>
         )}
 
         {error && (
-          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
+          <div
+            className="mt-3 rounded-xl px-3 py-2.5 text-sm animate-fade-in"
+            style={{ background: "rgba(251,113,133,0.1)", color: "#fb7185" }}
+          >
+            {error}
+          </div>
         )}
 
-        {isHost && (
+        {amHost && (
           <button
+            id="btn-start-playing"
             onClick={handleStartPlaying}
             disabled={loading || needAnswer.length > 0}
-            className="mt-5 w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-700 disabled:opacity-40"
+            className="mt-5 w-full py-3.5 rounded-xl font-bold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={
+              needAnswer.length === 0
+                ? {
+                    background: "linear-gradient(135deg, #10b981, #34d399)",
+                    boxShadow: "0 8px 24px rgba(16,185,129,0.4)",
+                  }
+                : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }
+            }
+            onMouseEnter={(e) => {
+              if (needAnswer.length === 0) e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
           >
             {needAnswer.length > 0
-              ? `รอคำตอบครบ (${needAnswer.length} คน)`
-              : "เริ่มเล่น!"}
+              ? `⏳ รอคำตอบครบ (${needAnswer.length} คน)`
+              : "🚀 เริ่มเล่น!"}
           </button>
         )}
       </div>

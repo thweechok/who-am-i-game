@@ -4,6 +4,41 @@ import { useState } from "react";
 import type { PublicRoomState } from "@/lib/types";
 import { startGame } from "@/lib/api-client";
 
+function PlayerAvatar({ name, isYou, isHost }: { name: string; isYou: boolean; isHost: boolean }) {
+  const initial = name.charAt(0).toUpperCase();
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className="relative w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
+        style={{
+          background: isYou
+            ? "linear-gradient(135deg, #6366f1, #8b5cf6)"
+            : "rgba(255,255,255,0.07)",
+          boxShadow: isYou ? "0 0 12px rgba(99,102,241,0.4)" : "none",
+        }}
+      >
+        {initial}
+        {/* Online pulse */}
+        <span
+          className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
+          style={{ background: "#34d399", boxShadow: "0 0 6px #34d399" }}
+        />
+      </div>
+      <div>
+        <span className="text-sm font-medium text-slate-200">
+          {name}
+          {isYou && <span className="ml-1.5 text-xs text-indigo-400">(คุณ)</span>}
+        </span>
+        {isHost && (
+          <span className="ml-2 text-[10px] font-semibold uppercase tracking-wider text-amber-400/80">
+            host
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function Lobby({
   room,
   playerId,
@@ -13,7 +48,7 @@ export function Lobby({
   playerId: string;
   onRefresh: () => void;
 }) {
-  const isHost = room.hostId === playerId;
+  const amHost = room.hostId === playerId;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -35,77 +70,134 @@ export function Lobby({
     const url = `${window.location.origin}/room/${room.code}`;
     navigator.clipboard?.writeText(url);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setTimeout(() => setCopied(false), 1800);
   }
 
-  return (
-    <div className="w-full max-w-md">
-      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          ล็อบบี้
-        </h2>
+  const canStart = room.players.length >= 3;
 
-        {/* room code */}
-        <div className="mt-4 flex items-center gap-3">
-          <div className="flex-1 rounded-lg bg-zinc-100 px-4 py-3 dark:bg-zinc-800">
-            <div className="text-xs text-zinc-500">รหัสห้อง</div>
-            <div className="font-mono text-2xl tracking-[0.4em] text-zinc-900 dark:text-zinc-50">
+  return (
+    <div className="w-full max-w-md animate-slide-up">
+      <div
+        className="rounded-2xl p-6"
+        style={{
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+        }}
+      >
+        <h2 className="text-lg font-bold text-slate-100 mb-5">ล็อบบี้</h2>
+
+        {/* Room code */}
+        <div
+          className="rounded-xl p-4 mb-5 flex items-center gap-3"
+          style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}
+        >
+          <div className="flex-1">
+            <div className="text-xs text-indigo-400/70 font-semibold uppercase tracking-widest mb-1">
+              รหัสห้อง
+            </div>
+            <div
+              className="font-mono text-3xl font-black tracking-[0.5em] text-indigo-300"
+              style={{ textShadow: "0 0 20px rgba(129,140,248,0.5)" }}
+            >
               {room.code}
             </div>
           </div>
           <button
+            id="btn-copy-invite"
             onClick={copyInvite}
-            className="rounded-lg border border-zinc-300 px-3 py-3 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200"
+            style={
+              copied
+                ? { background: "rgba(52,211,153,0.2)", color: "#34d399", border: "1px solid rgba(52,211,153,0.3)" }
+                : { background: "rgba(255,255,255,0.07)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.1)" }
+            }
           >
-            {copied ? "✓ คัดลอกแล้ว" : "คัดลอกลิงก์"}
+            {copied ? "✓ คัดลอก!" : "คัดลอกลิงก์"}
           </button>
         </div>
 
-        {/* players */}
-        <div className="mt-6">
-          <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-            ผู้เล่น ({room.players.length}/6)
+        {/* Players */}
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              ผู้เล่น
+            </span>
+            <span
+              className="text-xs font-mono px-2 py-0.5 rounded-full"
+              style={{ background: "rgba(255,255,255,0.06)", color: "#64748b" }}
+            >
+              {room.players.length}/6
+            </span>
           </div>
-          <ul className="space-y-1.5">
-            {room.players.map((p) => (
+          <ul className="space-y-2">
+            {room.players.map((p, i) => (
               <li
                 key={p.id}
-                className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/60"
+                className="flex items-center justify-between rounded-xl px-3 py-2.5 animate-slide-in-right"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  animationDelay: `${i * 60}ms`,
+                }}
               >
-                <span className="text-sm text-zinc-800 dark:text-zinc-200">
-                  {p.name}
-                  {p.id === playerId && (
-                    <span className="ml-1.5 text-xs text-indigo-500">(คุณ)</span>
-                  )}
-                </span>
-                {p.id === room.hostId && (
-                  <span className="text-xs text-zinc-400">host</span>
-                )}
+                <PlayerAvatar
+                  name={p.name}
+                  isYou={p.id === playerId}
+                  isHost={p.id === room.hostId}
+                />
               </li>
             ))}
           </ul>
         </div>
 
         {error && (
-          <p className="mt-4 text-sm text-red-600 dark:text-red-400">{error}</p>
+          <div
+            className="rounded-xl px-4 py-2.5 mb-4 text-sm"
+            style={{ background: "rgba(251,113,133,0.1)", color: "#fb7185" }}
+          >
+            {error}
+          </div>
         )}
 
-        {isHost ? (
+        {amHost ? (
           <button
+            id="btn-start-game"
             onClick={handleStart}
-            disabled={loading || room.players.length < 3}
-            className="mt-6 w-full rounded-lg bg-indigo-600 py-2.5 font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
+            disabled={loading || !canStart}
+            className="w-full py-3.5 rounded-xl font-bold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={
+              canStart
+                ? {
+                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                    boxShadow: "0 8px 24px rgba(99,102,241,0.4)",
+                  }
+                : { background: "rgba(255,255,255,0.06)" }
+            }
+            onMouseEnter={(e) => {
+              if (canStart && !loading) e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
           >
-            {room.players.length < 3
-              ? `ต้องมีอย่างน้อย 3 คน (ขาวอีก ${3 - room.players.length})`
-              : loading
-              ? "กำลังเริ่ม..."
-              : "เริ่มเกม"}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                กำลังเริ่ม...
+              </span>
+            ) : !canStart ? (
+              `ต้องมีอย่างน้อย 3 คน (ขาดอีก ${3 - room.players.length} คน)`
+            ) : (
+              "🎮 เริ่มเกม"
+            )}
           </button>
         ) : (
-          <p className="mt-6 text-center text-sm text-zinc-400">
+          <div
+            className="text-center py-3.5 rounded-xl text-sm text-slate-500"
+            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
+          >
+            <span className="animate-blink mr-1">⏳</span>
             รอ host เริ่มเกม...
-          </p>
+          </div>
         )}
       </div>
     </div>

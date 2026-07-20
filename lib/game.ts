@@ -41,6 +41,7 @@ export function emptyRoom(code: string, host: Player): RoomState {
       },
     ],
     finishers: [],
+    waitingForAnswer: false,
     createdAt: Date.now(),
   };
 }
@@ -90,6 +91,7 @@ export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
     round: room.round,
     chat: room.chat,
     finishers: room.finishers,
+    waitingForAnswer: room.waitingForAnswer ?? false,
     createdAt: room.createdAt,
   };
 }
@@ -148,6 +150,7 @@ export function beginPlaying(room: RoomState): { ok: boolean; error?: string } {
   room.status = "playing";
   room.round = 1;
   room.currentTurnIdx = 0;
+  room.waitingForAnswer = false;
   room.turnOrder = room.players.map((p) => p.id);
   // shuffle turn order
   for (let i = room.turnOrder.length - 1; i > 0; i--) {
@@ -163,7 +166,7 @@ export function beginPlaying(room: RoomState): { ok: boolean; error?: string } {
     fromId: null,
     fromName: "ระบบ",
     type: "system",
-    text: "เริมเกม! แต่ละคนถามได้ทีละข้อ — ถ้าจะทาย จะหมดสิทธิ์ถามในรอบนั้นทันที",
+    text: "เริ่มเกม! แต่ละคนถามได้ทีละข้อ — ถ้าจะทาย จะหมดสิทธิ์ถามในรอบนั้นทันที",
   });
   return { ok: true };
 }
@@ -201,6 +204,12 @@ export function applyAction(
   if (room.status !== "playing") {
     return { ok: false, error: "ยังไม่ได้เริ่มเล่น" };
   }
+
+  // Migrate old rooms that may not have this field
+  if (room.waitingForAnswer === undefined) {
+    room.waitingForAnswer = false;
+  }
+
   const player = findPlayer(room, playerId);
   if (!player) return { ok: false, error: "ไม่พบผู้เล่น" };
   if (player.guessedCorrectly) {
@@ -210,12 +219,16 @@ export function applyAction(
   const currentTurnId =
     room.turnOrder[room.currentTurnIdx % room.turnOrder.length];
 
+  // ──── ASK ────
   if (payload.type === "ask") {
     if (playerId !== currentTurnId) {
       return { ok: false, error: "ยังไม่ถึงตาคุณ" };
     }
     if (player.guessedThisRound) {
       return { ok: false, error: "คุณทายไปแล้ว หมดสิทธิ์ถามรอบนี้" };
+    }
+    if (room.waitingForAnswer) {
+      return { ok: false, error: "รอคำตอบจากผู้เล่นคนอื่นก่อน" };
     }
     const text = payload.text.trim().slice(0, 200);
     if (!text) return { ok: false, error: "พิมพ์คำถาม" };
@@ -225,14 +238,18 @@ export function applyAction(
       type: "question",
       text,
     });
-    advanceTurn(room);
+    // Do NOT advance turn yet — wait for someone to answer first
+    room.waitingForAnswer = true;
     return { ok: true };
   }
 
+  // ──── ANSWER ────
   if (payload.type === "answer") {
-    // anyone except the asker can answer; but tie to current question loosely
-    const askerId = currentTurnId;
-    if (playerId === askerId) {
+    if (!room.waitingForAnswer) {
+      return { ok: false, error: "ยังไม่มีคำถาม — รอจนกว่าจะมีการถาม" };
+    }
+    // The asker (current turn) cannot answer their own question
+    if (playerId === currentTurnId) {
       return { ok: false, error: "คุณถามเอง ตอบเองไม่ได้" };
     }
     pushChat(room, {
@@ -241,14 +258,26 @@ export function applyAction(
       type: "answer",
       text: payload.text,
     });
+    // First answer received → clear waiting flag and advance to next turn
+    room.waitingForAnswer = false;
+    advanceTurn(room);
+    if (isRoundOver(room)) {
+      endRound(room);
+    }
     return { ok: true };
   }
 
-  // guess
+  // ──── GUESS ────
   if (payload.type === "guess") {
     if (player.guessedThisRound) {
-      return { ok: false, error: "คุณทายไปแล้วครั้งนั้นรอบนี้" };
+      return { ok: false, error: "คุณทายไปแล้วครั้งหนึ่งรอบนี้" };
     }
+    // If someone guesses while we're waiting for an answer, drop the wait
+    // (the question is implicitly abandoned)
+    if (room.waitingForAnswer) {
+      room.waitingForAnswer = false;
+    }
+
     const guess = payload.text.trim().slice(0, 100);
     if (!guess) return { ok: false, error: "พิมพ์คำทาย" };
     const answer = (room.answers[playerId] ?? "").trim().toLowerCase();
@@ -312,6 +341,7 @@ export function applyAction(
 
 function endRound(room: RoomState) {
   room.status = "ended";
+  room.waitingForAnswer = false;
   // reveal all answers
   pushChat(room, {
     fromId: null,
@@ -337,6 +367,7 @@ export function startNextRound(room: RoomState): { ok: boolean; error?: string }
   room.round += 1;
   room.finishers = [];
   room.currentTurnIdx = 0;
+  room.waitingForAnswer = false;
   for (const p of room.players) {
     p.guessedCorrectly = false;
     p.guessedThisRound = false;

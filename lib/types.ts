@@ -47,6 +47,9 @@ export interface RoomState {
   chat: ChatMessage[];
   /** ranked finishers this round (playerIds in order) for scoring */
   finishers: string[];
+  /** true when someone has asked a question and we are waiting for an answer
+   *  before advancing to the next turn */
+  waitingForAnswer: boolean;
   createdAt: number;
 }
 
@@ -68,6 +71,8 @@ export interface PublicRoomState {
   round: number;
   chat: ChatMessage[];
   finishers: string[];
+  /** mirrors RoomState.waitingForAnswer — lets clients show answer buttons */
+  waitingForAnswer: boolean;
   createdAt: number;
 }
 

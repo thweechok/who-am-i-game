@@ -25,8 +25,17 @@ export function Playing({
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [room.chat.length]);
 
-  const canAct = me && !me.guessedThisRound && !me.guessedCorrectly;
-  const myAnswerHidden = room.myAnswer === null; // server hides own answer
+  const canAct = !!(me && !me.guessedThisRound && !me.guessedCorrectly);
+  // Can I answer? Not my turn, waiting for answer, and I haven't guessed correctly
+  const canAnswer =
+    !isMyTurn &&
+    room.waitingForAnswer &&
+    !!(me && !me.guessedCorrectly);
+
+  // Last question in chat (shown as context when waiting for answer)
+  const lastQuestion = [...room.chat]
+    .reverse()
+    .find((m) => m.type === "question");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -61,59 +70,158 @@ export function Playing({
     }
   }
 
+  const cardStyle = {
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: "1rem",
+  };
+
   return (
-    <div className="w-full max-w-2xl grid gap-4 md:grid-cols-[1fr_320px]">
-      {/* main: my card + actions */}
-      <div className="space-y-4">
-        {/* my head card */}
-        <div className="rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50 p-5 text-center dark:border-indigo-700 dark:bg-indigo-950/40">
-          <div className="text-xs uppercase tracking-wide text-indigo-500">
+    <div className="w-full max-w-2xl grid gap-4 md:grid-cols-[1fr_320px] animate-fade-in">
+      {/* ── Left column ── */}
+      <div className="space-y-3">
+        {/* My answer card */}
+        <div
+          className="p-4 text-center"
+          style={{
+            ...cardStyle,
+            background: "rgba(99,102,241,0.07)",
+            border: "1px solid rgba(99,102,241,0.25)",
+            boxShadow: "0 0 24px rgba(99,102,241,0.12)",
+          }}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-widest text-indigo-400/70 mb-1">
             คำตอบบนหัวคุณ
           </div>
-          <div className="mt-1 text-xl font-semibold text-indigo-900 dark:text-indigo-200">
-            {myAnswerHidden ? "❓ ยังไม่รู้ (ต้องทาย)" : room.myAnswer}
+          <div className="text-xl font-bold text-indigo-200">
+            {room.myAnswer === null ? "❓ ยังไม่รู้ — ต้องทาย!" : room.myAnswer}
           </div>
         </div>
 
-        {/* turn indicator */}
-        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-900">
-          <div className="text-sm text-zinc-500">ตาปัจจุบัน</div>
-          <div className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-            {room.players.find((p) => p.id === room.currentTurnId)?.name ?? "—"}
-            {isMyTurn && (
-              <span className="ml-2 text-sm font-normal text-indigo-500">
-                (ตาคุณ!)
-              </span>
-            )}
+        {/* Waiting for answer banner */}
+        {room.waitingForAnswer && lastQuestion && (
+          <div
+            className="p-4 animate-slide-up"
+            style={{
+              ...cardStyle,
+              background: "rgba(251,191,36,0.07)",
+              border: "1px solid rgba(251,191,36,0.25)",
+            }}
+          >
+            <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400/70 mb-1.5">
+              <span className="animate-blink mr-1">⏳</span> รอคำตอบ
+            </div>
+            <div className="text-sm font-semibold text-amber-200">
+              ❓ {lastQuestion.text}
+            </div>
+            <div className="text-xs text-amber-500/70 mt-1">
+              ถามโดย {lastQuestion.fromName} — รอให้คนอื่นตอบ yes/no
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* scores */}
-        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-900">
-          <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-            คะแนนรวม · รอบ {room.round}
-          </div>
-          <div className="space-y-1">
-            {[...room.players]
-              .sort((a, b) => b.score - a.score)
-              .map((p) => (
+        {/* Turn indicator */}
+        <div style={cardStyle} className="p-4">
+          <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">ตาปัจจุบัน</div>
+          <div className="flex items-center gap-3">
+            {room.players.map((p) => {
+              const isCurrent = p.id === room.currentTurnId;
+              const isLocked = p.guessedCorrectly || p.guessedThisRound;
+              return (
                 <div
                   key={p.id}
-                  className="flex items-center justify-between text-sm"
+                  className="flex flex-col items-center gap-1 transition-all duration-300"
+                  style={{ opacity: isLocked && !isCurrent ? 0.35 : 1 }}
                 >
-                  <span
-                    className={
-                      p.guessedCorrectly
-                        ? "text-emerald-600 dark:text-emerald-400 font-medium"
-                        : p.guessedThisRound
-                        ? "text-zinc-400 line-through"
-                        : "text-zinc-800 dark:text-zinc-200"
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-300"
+                    style={
+                      isCurrent
+                        ? {
+                            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                            boxShadow: "0 0 0 3px rgba(99,102,241,0.4), 0 0 20px rgba(99,102,241,0.3)",
+                            animation: "pulseRing 2.2s ease-in-out infinite",
+                          }
+                        : p.guessedCorrectly
+                        ? { background: "rgba(52,211,153,0.2)", border: "1px solid rgba(52,211,153,0.3)" }
+                        : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }
                     }
                   >
-                    {p.name}
-                    {p.id === playerId && " (คุณ)"}
+                    {p.guessedCorrectly ? "✓" : p.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span
+                    className="text-[9px] font-medium truncate max-w-12 text-center"
+                    style={{
+                      color: isCurrent ? "#818cf8" : p.guessedCorrectly ? "#34d399" : "#64748b",
+                    }}
+                  >
+                    {p.id === playerId ? "คุณ" : p.name.split(" ")[0]}
                   </span>
-                  <span className="font-mono text-zinc-600 dark:text-zinc-400">
+                </div>
+              );
+            })}
+          </div>
+          {isMyTurn && !room.waitingForAnswer && canAct && (
+            <div
+              className="mt-3 text-xs font-semibold animate-pulse-ring rounded-lg px-3 py-1.5 text-center"
+              style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8" }}
+            >
+              ✨ ตาคุณ! เลือกถามหรือทาย
+            </div>
+          )}
+          {isMyTurn && room.waitingForAnswer && (
+            <div
+              className="mt-3 text-xs rounded-lg px-3 py-1.5 text-center"
+              style={{ background: "rgba(251,191,36,0.08)", color: "#fbbf24" }}
+            >
+              รอผู้เล่นคนอื่นตอบคำถามของคุณก่อน
+            </div>
+          )}
+        </div>
+
+        {/* Scoreboard */}
+        <div style={cardStyle} className="p-4">
+          <div className="text-xs text-slate-500 uppercase tracking-wider mb-3">
+            คะแนน · รอบ {room.round}
+          </div>
+          <div className="space-y-2">
+            {[...room.players]
+              .sort((a, b) => b.score - a.score)
+              .map((p, rank) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2 transition-all duration-200"
+                  style={{
+                    background: p.id === playerId
+                      ? "rgba(99,102,241,0.08)"
+                      : "rgba(255,255,255,0.03)",
+                    border: p.id === playerId
+                      ? "1px solid rgba(99,102,241,0.2)"
+                      : "1px solid rgba(255,255,255,0.05)",
+                  }}
+                >
+                  <span
+                    className="w-5 text-center text-xs font-mono font-bold"
+                    style={{ color: rank === 0 ? "#fbbf24" : rank === 1 ? "#94a3b8" : rank === 2 ? "#b45309" : "#475569" }}
+                  >
+                    {rank + 1}
+                  </span>
+                  <span
+                    className="flex-1 text-sm font-medium truncate"
+                    style={{
+                      color: p.guessedCorrectly
+                        ? "#34d399"
+                        : p.guessedThisRound
+                        ? "#475569"
+                        : "#cbd5e1",
+                      textDecoration: p.guessedThisRound && !p.guessedCorrectly ? "line-through" : "none",
+                    }}
+                  >
+                    {p.name}
+                    {p.id === playerId && <span className="ml-1 text-indigo-400 text-xs">(คุณ)</span>}
+                    {p.guessedCorrectly && <span className="ml-1 text-[10px]">✅</span>}
+                  </span>
+                  <span className="font-mono font-bold text-sm" style={{ color: "#818cf8" }}>
                     {p.score}
                   </span>
                 </div>
@@ -121,141 +229,257 @@ export function Playing({
           </div>
         </div>
 
-        {/* actions */}
-        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+        {/* Action panel */}
+        <div style={cardStyle} className="p-4">
+          {/* Locked out */}
           {!canAct ? (
-            <p className="text-center text-sm text-zinc-500">
-              {me?.guessedCorrectly
-                ? "✓ คุณทายถูกแล้ว รอจบรอบ"
-                : "คุณทายไปแล้วในรอบนี้ รอจบรอบ"}
-            </p>
-          ) : isMyTurn ? (
-            <>
-              <div className="mb-3 grid grid-cols-2 gap-1 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                <button
-                  onClick={() => setMode("ask")}
-                  className={`py-1.5 rounded text-sm font-medium ${
-                    mode === "ask"
-                      ? "bg-white text-indigo-600 dark:bg-zinc-950 dark:text-indigo-400"
-                      : "text-zinc-500"
-                  }`}
-                >
-                  ถาม
-                </button>
-                <button
-                  onClick={() => setMode("guess")}
-                  className={`py-1.5 rounded text-sm font-medium ${
-                    mode === "guess"
-                      ? "bg-white text-indigo-600 dark:bg-zinc-950 dark:text-indigo-400"
-                      : "text-zinc-500"
-                  }`}
-                >
-                  ทาย (เสี่ยง!)
-                </button>
+            <div className="text-center py-4">
+              <div className="text-2xl mb-2">
+                {me?.guessedCorrectly ? "🎉" : "😴"}
+              </div>
+              <p className="text-sm text-slate-500">
+                {me?.guessedCorrectly
+                  ? "คุณทายถูกแล้ว! รอจบรอบ"
+                  : "คุณทายไปแล้วในรอบนี้ รอจบรอบ"}
+              </p>
+            </div>
+          ) : /* Not my turn — show answer buttons if waiting */
+          canAnswer ? (
+            <div className="animate-slide-up">
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-3 font-semibold">
+                ตอบคำถาม
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { val: "yes" as const, label: "✅ ใช่", color: "#10b981", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)" },
+                  { val: "no" as const, label: "❌ ไม่ใช่", color: "#fb7185", bg: "rgba(251,113,133,0.12)", border: "rgba(251,113,133,0.3)" },
+                  { val: "maybe" as const, label: "🤔 อาจจะ", color: "#fbbf24", bg: "rgba(251,191,36,0.12)", border: "rgba(251,191,36,0.3)" },
+                ] as const).map(({ val, label, color, bg, border }) => (
+                  <button
+                    key={val}
+                    id={`btn-answer-${val}`}
+                    onClick={() => handleAnswer(val)}
+                    disabled={loading}
+                    className="py-2.5 rounded-xl text-sm font-bold transition-all duration-150 disabled:opacity-40"
+                    style={{ background: bg, color, border: `1px solid ${border}` }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : isMyTurn && !room.waitingForAnswer ? (
+            /* My turn — ask or guess */
+            <div className="animate-slide-up">
+              <div
+                className="flex gap-1 p-1 rounded-xl mb-3"
+                style={{ background: "rgba(255,255,255,0.04)" }}
+              >
+                {(["ask", "guess"] as const).map((m) => (
+                  <button
+                    key={m}
+                    id={`tab-action-${m}`}
+                    onClick={() => setMode(m)}
+                    className="flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200"
+                    style={
+                      mode === m
+                        ? {
+                            background:
+                              m === "guess"
+                                ? "linear-gradient(135deg, #f43f5e, #fb7185)"
+                                : "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                            color: "#fff",
+                            boxShadow:
+                              m === "guess"
+                                ? "0 4px 12px rgba(244,63,94,0.4)"
+                                : "0 4px 12px rgba(99,102,241,0.4)",
+                          }
+                        : { color: "#64748b" }
+                    }
+                  >
+                    {m === "ask" ? "❓ ถาม" : "🎯 ทาย (เสี่ยง!)"}
+                  </button>
+                ))}
               </div>
               <form onSubmit={handleSubmit} className="flex gap-2">
                 <input
+                  id="input-action"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={
-                    mode === "ask"
-                      ? "พิมพ์คำถาม yes/no..."
-                      : "ทายว่าคุณคือใคร..."
+                    mode === "ask" ? "พิมพ์คำถาม yes/no..." : "ทายว่าคุณคือใคร..."
                   }
-                  className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  className="flex-1 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200"
+                  style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = mode === "guess" ? "#f43f5e" : "#6366f1";
+                    e.currentTarget.style.boxShadow = `0 0 0 3px ${mode === "guess" ? "rgba(244,63,94,0.2)" : "rgba(99,102,241,0.2)"}`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                 />
                 <button
+                  id={`btn-send-${mode}`}
                   type="submit"
                   disabled={loading || !input.trim()}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50 ${
-                    mode === "guess"
-                      ? "bg-rose-600 hover:bg-rose-700"
-                      : "bg-indigo-600 hover:bg-indigo-700"
-                  }`}
+                  className="px-4 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-40 transition-all duration-150"
+                  style={{
+                    background:
+                      mode === "guess"
+                        ? "linear-gradient(135deg, #f43f5e, #fb7185)"
+                        : "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                    boxShadow:
+                      mode === "guess"
+                        ? "0 4px 12px rgba(244,63,94,0.35)"
+                        : "0 4px 12px rgba(99,102,241,0.35)",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
                 >
                   {mode === "guess" ? "ทาย!" : "ส่ง"}
                 </button>
               </form>
               {mode === "guess" && (
-                <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                <p
+                  className="mt-2 text-xs rounded-lg px-3 py-1.5 animate-fade-in"
+                  style={{ background: "rgba(251,113,133,0.08)", color: "#fb7185" }}
+                >
                   ⚠ ถ้าทาย จะหมดสิทธิ์ถามในรอบนี้ทันที
                 </p>
               )}
-            </>
-          ) : room.currentTurnId ? (
-            <div>
-              <p className="text-sm text-zinc-500 mb-2">
-                ตอบคำถาม yes/no ให้ผู้ถามได้
-              </p>
-              <div className="flex gap-2">
-                {(["yes", "no", "maybe"] as const).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => handleAnswer(v)}
-                    disabled={loading}
-                    className="flex-1 rounded-lg py-2 text-sm font-medium transition disabled:opacity-50 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-                  >
-                    {v === "yes" ? "ใช่" : v === "no" ? "ไม่ใช่" : "อาจจะ"}
-                  </button>
-                ))}
-              </div>
             </div>
-          ) : null}
+          ) : (
+            /* Not my turn, not waiting — just wait */
+            <div className="text-center py-4">
+              <div className="text-2xl mb-2 animate-float">⌛</div>
+              <p className="text-sm text-slate-500">
+                รอตา{" "}
+                <span className="text-slate-300 font-medium">
+                  {room.players.find((p) => p.id === room.currentTurnId)?.name ?? "..."}
+                </span>
+              </p>
+            </div>
+          )}
+
           {error && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+            <div
+              className="mt-3 rounded-xl px-3 py-2 text-sm animate-fade-in"
+              style={{ background: "rgba(251,113,133,0.1)", color: "#fb7185" }}
+            >
               {error}
-            </p>
+            </div>
           )}
         </div>
       </div>
 
-      {/* chat */}
-      <ChatPanel chat={room.chat} players={room.players} chatEndRef={chatEndRef} />
+      {/* ── Right column: Chat ── */}
+      <ChatPanel chat={room.chat} playerId={playerId} chatEndRef={chatEndRef} />
     </div>
   );
 }
 
 function ChatPanel({
   chat,
+  playerId,
   chatEndRef,
 }: {
   chat: ChatMessage[];
-  players: PublicRoomState["players"];
+  playerId: string;
   chatEndRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-900 h-[400px] md:h-auto md:max-h-[600px] flex flex-col">
-      <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-        ห้องแชต์
+    <div
+      className="rounded-2xl flex flex-col h-[460px] md:h-auto md:max-h-[600px]"
+      style={{
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.07)",
+      }}
+    >
+      <div
+        className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 flex-shrink-0"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+      >
+        💬 แชต
       </div>
-      <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
-        {chat.map((m) => (
-          <div
-            key={m.id}
-            className={`text-sm rounded-lg px-2.5 py-1.5 ${
-              m.type === "system"
-                ? "bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
-                : m.type === "question"
-                ? "bg-indigo-50 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
-                : m.type === "answer"
-                ? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                : m.correct
-                ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
-                : "bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300"
-            }`}
-          >
-            <span className="font-medium">{m.fromName}: </span>
-            <span>
-              {m.type === "question"
-                ? `❓ ${m.text}`
-                : m.type === "guess"
-                ? `🎯 ${m.text}`
-                : m.text}
-            </span>
-          </div>
+      <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+        {chat.map((m, i) => (
+          <ChatBubble key={m.id} msg={m} isMe={m.fromId === playerId} index={i} />
         ))}
         <div ref={chatEndRef} />
       </div>
+    </div>
+  );
+}
+
+function ChatBubble({
+  msg,
+  isMe,
+  index,
+}: {
+  msg: ChatMessage;
+  isMe: boolean;
+  index: number;
+}) {
+  const style = (() => {
+    if (msg.type === "system") {
+      return {
+        background: "rgba(251,191,36,0.08)",
+        color: "#fbbf24",
+        border: "1px solid rgba(251,191,36,0.15)",
+      };
+    }
+    if (msg.type === "question") {
+      return {
+        background: isMe ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.1)",
+        color: "#a5b4fc",
+        border: `1px solid rgba(99,102,241,${isMe ? 0.4 : 0.2})`,
+      };
+    }
+    if (msg.type === "answer") {
+      return {
+        background: "rgba(255,255,255,0.05)",
+        color: "#94a3b8",
+        border: "1px solid rgba(255,255,255,0.08)",
+      };
+    }
+    // guess
+    return msg.correct
+      ? { background: "rgba(52,211,153,0.12)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }
+      : { background: "rgba(251,113,133,0.1)", color: "#fb7185", border: "1px solid rgba(251,113,133,0.2)" };
+  })();
+
+  const icon =
+    msg.type === "question"
+      ? "❓"
+      : msg.type === "answer"
+      ? msg.text === "yes" ? "✅" : msg.text === "no" ? "❌" : "🤔"
+      : msg.type === "guess"
+      ? "🎯"
+      : "💬";
+
+  return (
+    <div
+      className="rounded-xl px-3 py-2 text-xs leading-relaxed animate-slide-in-right"
+      style={{ ...style, animationDelay: `${Math.min(index * 20, 300)}ms` }}
+    >
+      {msg.type !== "system" && (
+        <span className="font-bold mr-1" style={{ color: isMe ? "#818cf8" : "#94a3b8" }}>
+          {msg.fromName}:
+        </span>
+      )}
+      <span>
+        {icon}{" "}
+        {msg.type === "answer"
+          ? msg.text === "yes" ? "ใช่" : msg.text === "no" ? "ไม่ใช่" : "อาจจะ"
+          : msg.text}
+      </span>
     </div>
   );
 }
