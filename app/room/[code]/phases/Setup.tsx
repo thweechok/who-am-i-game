@@ -301,18 +301,17 @@ export function Setup({
 
       {/* ── Start Game (host only) ── */}
       {amHost && (
-        <div className="p-4" style={rpgCard}>
-          {needAnswer.length > 0 ? (
-            <p className="text-xs text-center" style={{ color: "#6b4a1a" }}>
-              ⏳ กด "สุ่มคำตอบให้ทุกคน" ก่อนเริ่มเกม ({readyCount}/{activePlayers.length} พร้อม)
+        <div className="p-4 space-y-2" style={rpgCard}>
+          {needAnswer.length > 0 && (
+            <p className="text-xs text-center pb-1" style={{ color: "#9a6e10" }}>
+              ⚠️ กด "สุ่มคำตอบให้ทุกคน" ด้านบนก่อน ({readyCount}/{activePlayers.length} พร้อม)
             </p>
-          ) : (
-            <button onClick={handleStart} disabled={loading}
-              className="w-full py-4 text-base font-black tracking-wider transition-all hover:brightness-110 disabled:opacity-40"
-              style={rpgBtnPrimary}>
-              ⚔️ เริ่มเกม!
-            </button>
           )}
+          <button onClick={handleStart} disabled={loading || needAnswer.length > 0}
+            className="w-full py-4 text-base font-black tracking-wider transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={rpgBtnPrimary}>
+            ⚔️ เริ่มเกม!
+          </button>
         </div>
       )}
       {!amHost && needAnswer.length === 0 && (
