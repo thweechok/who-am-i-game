@@ -21,7 +21,27 @@ export function Playing({
   const [error, setError] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<{ answer: string; reason: string; source: string } | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!room.roundStartedAt || room.roundStartedAt === 0) return;
+    const durationMs = (room.roundDurationSeconds ?? 420) * 1000;
+    const endTime = room.roundStartedAt + durationMs;
+
+    function tick() {
+      const remaining = Math.max(0, endTime - Date.now());
+      setTimeLeft(remaining);
+      if (remaining === 0) {
+        // Trigger time-up on server
+        sendAction(room.code, playerId, { type: "timeUp" }).catch(() => {});
+      }
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [room.roundStartedAt, room.roundDurationSeconds, room.code, playerId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });

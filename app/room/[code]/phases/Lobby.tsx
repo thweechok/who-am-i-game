@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { PublicRoomState } from "@/lib/types";
-import { startGame } from "@/lib/api-client";
+import { startGame, sendAction } from "@/lib/api-client";
 
 function PlayerAvatar({ name, isYou, isHost }: { name: string; isYou: boolean; isHost: boolean }) {
   const initial = name.charAt(0).toUpperCase();
@@ -157,6 +157,38 @@ export function Lobby({
             style={{ background: "rgba(251,113,133,0.1)", color: "#fb7185" }}
           >
             {error}
+          </div>
+        )}
+
+        {/* Max questions setting — host only */}
+        {amHost && (
+          <div className="mb-4 rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+            <p className="text-xs font-bold text-slate-400 mb-2">⚙️ จำกัดคำถามต่อตา</p>
+            <div className="flex gap-2">
+              {[3, 5, 8, 0].map((n) => {
+                const label = n === 0 ? "∞" : `${n}`;
+                const active = (room.maxQuestionsPerTurn ?? 5) === n;
+                return (
+                  <button
+                    key={n}
+                    id={`btn-max-q-${n}`}
+                    onClick={async () => {
+                      try { await sendAction(room.code, playerId, { type: "setMaxQuestions", value: n }); onRefresh(); }
+                      catch { /* ignore */ }
+                    }}
+                    className="flex-1 py-2 rounded-lg text-sm font-bold transition-all duration-150"
+                    style={active
+                      ? { background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", boxShadow: "0 4px 12px rgba(99,102,241,0.35)" }
+                      : { background: "rgba(255,255,255,0.05)", color: "#475569" }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-slate-600 mt-1.5">
+              {(room.maxQuestionsPerTurn ?? 5) === 0 ? "ไม่จำกัดคำถาม" : `ถามได้สูงสุด ${room.maxQuestionsPerTurn ?? 5} ข้อต่อตา แล้วต้องทายหรือผ่าน`}
+            </p>
           </div>
         )}
 

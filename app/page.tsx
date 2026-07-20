@@ -1,9 +1,176 @@
 "use client";
 
-import { useState, Suspense, useEffect, useRef } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { createRoom, joinRoom } from "@/lib/api-client";
+
+/* ── How To Play Modal ──────────────────────────────────────────────────── */
+const HOW_TO_STEPS = [
+  {
+    icon: "🏠",
+    title: "สร้างหรือเข้าร่วมห้อง",
+    desc: "คนหนึ่งสร้างห้อง แล้วแชร์รหัส 4 ตัวให้เพื่อน 1-5 คนเข้าร่วม",
+    color: "#6366f1",
+  },
+  {
+    icon: "✏️",
+    title: "ตั้งคำตอบให้กัน",
+    desc: "แต่ละคนตั้งชื่อให้คนอื่น เช่น 'เมซซี่' หรือใช้ AI สุ่มให้อัตโนมัติ — ห้ามตั้งให้ตัวเอง!",
+    color: "#8b5cf6",
+  },
+  {
+    icon: "❓",
+    title: "ถามคำถาม yes/no",
+    desc: "ถึงตาคุณ? ถามได้เลย เช่น 'ฉันเป็นนักกีฬาไหม?' คนอื่นจะตอบ ใช่/ไม่ใช่/อาจจะ",
+    color: "#38bdf8",
+  },
+  {
+    icon: "🤖",
+    title: "ไม่รู้? ถาม AI ช่วยได้!",
+    desc: "ถ้าคนอื่นไม่รู้คำตอบ กด 'ถาม AI' — AI จะค้นหาข้อมูลและตอบแทนโดยอัตโนมัติ",
+    color: "#34d399",
+  },
+  {
+    icon: "🎯",
+    title: "ทายชื่อตัวเอง",
+    desc: "คิดว่ารู้แล้ว? กด 'ทาย!' — ทายถูกได้คะแนน แต่ทายผิดหมดสิทธิ์รอบนั้นทันที!",
+    color: "#fbbf24",
+  },
+  {
+    icon: "🏆",
+    title: "คะแนนและชนะ",
+    desc: "ทายถูกก่อน = 3 แต้ม | ที่ 2 = 2 แต้ม | ที่ 3 = 1 แต้ม เล่นหลายรอบสะสมแต้มรวมได้!",
+    color: "#fb7185",
+  },
+];
+
+function HowToPlayModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(20px)", animation: "fadeIn 0.2s ease-out" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="w-full max-w-lg rounded-3xl overflow-hidden"
+        style={{
+          animation: "slideUpFade 0.3s ease-out",
+          background: "rgba(10,12,30,0.98)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 40px 100px rgba(0,0,0,0.7), 0 0 60px rgba(99,102,241,0.15)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+        }}
+      >
+        {/* Header */}
+        <div className="relative px-6 pt-6 pb-4"
+          style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.08))" }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-black text-white">วิธีเล่น WHO AM I?</h2>
+              <p className="text-xs text-slate-500 mt-1">ทายให้ออกว่าคุณคือใคร ก่อนสิทธิ์หมด!</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all"
+              style={{ background: "rgba(255,255,255,0.08)", color: "#64748b", border: "1px solid rgba(255,255,255,0.08)" }}
+            >✕</button>
+          </div>
+        </div>
+
+        {/* Steps */}
+        <div className="px-5 pb-5 pt-3 space-y-3">
+          {HOW_TO_STEPS.map((step, i) => (
+            <div
+              key={i}
+              className="flex gap-4 p-4 rounded-2xl transition-all duration-200"
+              style={{
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                animation: `slideUpFade 0.35s ease-out ${i * 0.06}s both`,
+              }}
+            >
+              {/* Icon */}
+              <div
+                className="flex-shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center text-xl"
+                style={{ background: `${step.color}15`, border: `1px solid ${step.color}30` }}
+              >
+                {step.icon}
+              </div>
+              {/* Text */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                    style={{ background: `${step.color}15`, color: step.color }}
+                  >
+                    ขั้นตอน {i + 1}
+                  </span>
+                </div>
+                <p className="text-sm font-bold text-slate-200 mb-0.5">{step.title}</p>
+                <p className="text-xs text-slate-500 leading-relaxed">{step.desc}</p>
+              </div>
+            </div>
+          ))}
+
+          {/* Score table */}
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{ border: "1px solid rgba(255,255,255,0.07)", animation: "slideUpFade 0.35s ease-out 0.36s both" }}
+          >
+            <div className="px-4 py-2.5" style={{ background: "rgba(251,191,36,0.08)" }}>
+              <p className="text-xs font-black text-yellow-400 uppercase tracking-wider">🏅 ตารางคะแนน</p>
+            </div>
+            <div className="grid grid-cols-3 divide-x" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
+              {[
+                { rank: "🥇 ที่ 1", pts: "3 แต้ม", color: "#fbbf24" },
+                { rank: "🥈 ที่ 2", pts: "2 แต้ม", color: "#94a3b8" },
+                { rank: "🥉 ที่ 3", pts: "1 แต้ม", color: "#cd7c39" },
+              ].map((r) => (
+                <div key={r.rank} className="flex flex-col items-center py-3 px-2">
+                  <span className="text-sm font-bold" style={{ color: r.color }}>{r.pts}</span>
+                  <span className="text-[10px] text-slate-600 mt-0.5">{r.rank}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tips */}
+          <div
+            className="rounded-2xl p-4"
+            style={{
+              background: "rgba(56,189,248,0.07)",
+              border: "1px solid rgba(56,189,248,0.15)",
+              animation: "slideUpFade 0.35s ease-out 0.42s both",
+            }}
+          >
+            <p className="text-xs font-black text-cyan-400 mb-2">💡 เทคนิค</p>
+            <ul className="text-xs text-slate-500 space-y-1">
+              <li>• ถามเรื่องอาชีพ, ประเทศ, เพศ, ยุคสมัย ก่อน — แคบลงเรื่อยๆ</li>
+              <li>• อย่าทายจนกว่าจะมั่นใจ 80%+ ขึ้นไป</li>
+              <li>• กด 🤖 ถาม AI ถ้าไม่รู้จะตอบ ใช่/ไม่ใช่ ให้ใคร</li>
+            </ul>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full py-3.5 rounded-2xl font-black text-white text-sm transition-all duration-200"
+            style={{
+              background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+              boxShadow: "0 8px 24px rgba(99,102,241,0.35)",
+              animation: "slideUpFade 0.35s ease-out 0.48s both",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
+          >
+            เข้าใจแล้ว! เล่นเลย 🚀
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const GAMES = [
   {
@@ -173,6 +340,7 @@ function LauncherContent() {
   const searchParams = useSearchParams();
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [showModal, setShowModal] = useState(!!searchParams.get("room"));
+  const [showHowTo, setShowHowTo] = useState(false);
   const [key, setKey] = useState(0);
   const selected = GAMES[selectedIdx];
 
@@ -388,6 +556,7 @@ function LauncherContent() {
       </div>
 
       {showModal && <PlayModal game={selected} onClose={() => setShowModal(false)} />}
+      {showHowTo && <HowToPlayModal onClose={() => setShowHowTo(false)} />}
     </div>
   );
 }

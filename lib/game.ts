@@ -43,6 +43,10 @@ export function emptyRoom(code: string, host: Player): RoomState {
     finishers: [],
     waitingForAnswer: false,
     difficulty: "medium",
+    maxQuestionsPerTurn: 5,
+    questionsThisTurn: 0,
+    roundStartedAt: 0,
+    roundDurationSeconds: 420,
     createdAt: Date.now(),
   };
 }
@@ -56,6 +60,7 @@ export function newPlayer(name: string): Player {
     guessedCorrectly: false,
     guessedThisRound: false,
     lastSeen: Date.now(),
+    bonusQuestions: 2,
   };
 }
 
@@ -94,6 +99,10 @@ export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
     finishers: room.finishers,
     waitingForAnswer: room.waitingForAnswer ?? false,
     difficulty: room.difficulty ?? "medium",
+    maxQuestionsPerTurn: room.maxQuestionsPerTurn ?? 5,
+    questionsThisTurn: room.questionsThisTurn ?? 0,
+    roundStartedAt: room.roundStartedAt ?? 0,
+    roundDurationSeconds: room.roundDurationSeconds ?? 420,
     createdAt: room.createdAt,
   };
 }
@@ -153,8 +162,9 @@ export function beginPlaying(room: RoomState): { ok: boolean; error?: string } {
   room.round = 1;
   room.currentTurnIdx = 0;
   room.waitingForAnswer = false;
+  room.questionsThisTurn = 0;
+  room.roundStartedAt = Date.now();
   room.turnOrder = room.players.map((p) => p.id);
-  // shuffle turn order
   for (let i = room.turnOrder.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [room.turnOrder[i], room.turnOrder[j]] = [room.turnOrder[j], room.turnOrder[i]];
@@ -163,12 +173,13 @@ export function beginPlaying(room: RoomState): { ok: boolean; error?: string } {
   for (const p of room.players) {
     p.guessedCorrectly = false;
     p.guessedThisRound = false;
+    p.bonusQuestions = 2;
   }
   pushChat(room, {
     fromId: null,
     fromName: "ระบบ",
     type: "system",
-    text: "เริ่มเกม! แต่ละคนถามได้ทีละข้อ — ถ้าจะทาย จะหมดสิทธิ์ถามในรอบนั้นทันที",
+    text: `เริ่มเกม! ถามได้คนละ ${room.maxQuestionsPerTurn} ข้อต่อตา + โบนัส 2 ข้อ ⏱️ เวลา ${Math.floor((room.roundDurationSeconds ?? 420) / 60)} นาที`,
   });
   return { ok: true };
 }
@@ -186,15 +197,18 @@ export function isRoundOver(room: RoomState): boolean {
 function advanceTurn(room: RoomState) {
   const n = room.turnOrder.length;
   if (n === 0) return;
+  const prevIdx = room.currentTurnIdx;
   for (let step = 0; step < n; step++) {
     room.currentTurnIdx = (room.currentTurnIdx + 1) % n;
     const pid = room.turnOrder[room.currentTurnIdx];
     const p = findPlayer(room, pid);
     if (p && !p.guessedCorrectly && !p.guessedThisRound) {
-      return; // this player can still act
+      // Reset question counter for the new player's turn
+      room.questionsThisTurn = 0;
+      return;
     }
   }
-  // nobody can act -> round effectively over
+  // nobody can act → round effectively over
 }
 
 /** Apply a player action. Mutates room and returns ok/error. */
@@ -232,6 +246,21 @@ export function applyAction(
     if (room.waitingForAnswer) {
       return { ok: false, error: "รอคำตอบจากผู้เล่นคนอื่นก่อน" };
     }
+    // Check question limit
+    const maxQ = room.maxQuestionsPerTurn ?? 5;
+    const used = room.questionsThisTurn ?? 0;
+    if (maxQ > 0 && used >= maxQ) {
+      // Check if player has bonus questions
+      if ((player.bonusQuestions ?? 0) <= 0) {
+        return { ok: false, error: `ครบ ${maxQ} คำถามแล้ว — ต้องทายหรือผ่าน!` };
+      }
+      // Use a bonus question
+      player.bonusQuestions -= 1;
+      pushChat(room, {
+        fromId: null, fromName: "ระบบ", type: "system",
+        text: `🎁 ${player.name} ใช้โบนัสคำถาม (เหลือ ${player.bonusQuestions} ข้อ)`,
+      });
+    }
     const text = payload.text.trim().slice(0, 200);
     if (!text) return { ok: false, error: "พิมพ์คำถาม" };
     pushChat(room, {
@@ -240,7 +269,7 @@ export function applyAction(
       type: "question",
       text,
     });
-    // Do NOT advance turn yet — wait for someone to answer first
+    room.questionsThisTurn = (room.questionsThisTurn ?? 0) + 1;
     room.waitingForAnswer = true;
     return { ok: true };
   }
@@ -260,8 +289,8 @@ export function applyAction(
       type: "answer",
       text: payload.text,
     });
-    // First answer received → clear waiting flag and advance to next turn
     room.waitingForAnswer = false;
+    room.questionsThisTurn = (room.questionsThisTurn ?? 0); // keep count, reset on advanceTurn
     advanceTurn(room);
     if (isRoundOver(room)) {
       endRound(room);
@@ -336,6 +365,51 @@ export function applyAction(
       endRound(room);
     }
     return { ok: true };
+  }
+
+  // ──── PASS ────
+  if (payload.type === "pass") {
+    if (playerId !== currentTurnId) {
+      return { ok: false, error: "ยังไม่ถึงตาคุณ" };
+    }
+    if (player.guessedThisRound) {
+      return { ok: false, error: "คุณใช้สิทธิ์ไปแล้ว" };
+    }
+    if (room.waitingForAnswer) {
+      room.waitingForAnswer = false;
+    }
+    player.guessedThisRound = true; // mark as used up
+    pushChat(room, {
+      fromId: null,
+      fromName: "ระบบ",
+      type: "system",
+      text: `➡️ ${player.name} ผ่าน — ข้ามตา`,
+    });
+    advanceTurn(room);
+    if (isRoundOver(room)) {
+      endRound(room);
+    }
+    return { ok: true };
+  }
+
+  // ──── SET MAX QUESTIONS (host only, lobby/setup) ────
+  if (payload.type === "setMaxQuestions") {
+    if (room.hostId !== playerId) {
+      return { ok: false, error: "เฉพาะ host เท่านั้น" };
+    }
+    room.maxQuestionsPerTurn = Math.max(0, Math.min(20, Number(payload.value) || 0));
+    return { ok: true };
+  }
+
+  // ──── TIME UP ────
+  if (payload.type === "timeUp") {
+    const startedAt = room.roundStartedAt ?? 0;
+    const durMs = (room.roundDurationSeconds ?? 420) * 1000;
+    if (startedAt > 0 && Date.now() - startedAt >= durMs) {
+      endRound(room);
+      return { ok: true };
+    }
+    return { ok: false, error: "ยังไม่หมดเวลา" };
   }
 
   return { ok: false, error: "action ไม่ถูกต้อง" };

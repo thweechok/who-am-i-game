@@ -8,12 +8,11 @@ export interface Player {
   id: string;
   name: string;
   score: number;
-  /** guessed this round correctly already (locked out from guessing again) */
   guessedCorrectly: boolean;
-  /** has used their one guess attempt this round (wrong guess) */
   guessedThisRound: boolean;
-  /** online flag for reconnect; not strictly required */
   lastSeen: number;
+  /** bonus extra questions remaining this round */
+  bonusQuestions: number;
 }
 
 export type ChatType = "question" | "answer" | "guess" | "system";
@@ -50,8 +49,13 @@ export interface RoomState {
   /** true when someone has asked a question and we are waiting for an answer
    *  before advancing to the next turn */
   waitingForAnswer: boolean;
-  /** AI difficulty for answer generation */
   difficulty: "easy" | "medium" | "hard";
+  maxQuestionsPerTurn: number;
+  questionsThisTurn: number;
+  /** unix ms when playing phase started (for countdown timer) */
+  roundStartedAt: number;
+  /** round duration in seconds (default 420 = 7 min) */
+  roundDurationSeconds: number;
   createdAt: number;
 }
 
@@ -75,8 +79,11 @@ export interface PublicRoomState {
   finishers: string[];
   /** mirrors RoomState.waitingForAnswer — lets clients show answer buttons */
   waitingForAnswer: boolean;
-  /** AI difficulty */
   difficulty: "easy" | "medium" | "hard";
+  maxQuestionsPerTurn: number;
+  questionsThisTurn: number;
+  roundStartedAt: number;
+  roundDurationSeconds: number;
   createdAt: number;
 }
 
@@ -84,4 +91,7 @@ export interface PublicRoomState {
 export type ActionPayload =
   | { type: "ask"; text: string }
   | { type: "answer"; text: "yes" | "no" | "maybe" }
-  | { type: "guess"; text: string };
+  | { type: "guess"; text: string }
+  | { type: "pass" }
+  | { type: "setMaxQuestions"; value: number }
+  | { type: "timeUp" };
