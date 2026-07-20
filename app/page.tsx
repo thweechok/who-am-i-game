@@ -1,92 +1,59 @@
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { createRoom, joinRoom } from "@/lib/api-client";
 
-// ─── Game catalogue ────────────────────────────────────────────────────────
 const GAMES = [
   {
     id: "who-am-i",
     title: "WHO AM I?",
     titleTH: "ฉันคือใคร?",
-    genre: "🎉 ปาร์ตี้  ·  ❓ ทายคำ  ·  👥 2–6 คน",
-    description: "คำตอบถูกซ่อนไว้บนหัวคุณ — ถามได้แค่ yes/no! ใครจะทายออกก่อนกัน?",
+    genre: ["🎉 ปาร์ตี้", "❓ ทายคำ", "👥 2–6 คน"],
+    description: "คำตอบถูกซ่อนไว้บนหัวคุณ — ถามได้แค่ yes/no!\nใครจะทายออกก่อนกัน?",
     cover: "/who-am-i-cover.png",
     thumb: "/who-am-i-thumb.png",
     available: true,
-    accent: "#6366f1",
-    glow: "rgba(99,102,241,0.5)",
-    tag: "✅ พร้อมเล่น",
+    accent: "#7c3aed",
+    accentLight: "#a78bfa",
+    glow: "rgba(124,58,237,0.6)",
+    tag: "พร้อมเล่น",
     tagColor: "#34d399",
-    tagBg: "rgba(52,211,153,0.12)",
   },
   {
     id: "coming-2",
-    title: "???",
+    title: "Coming Soon",
     titleTH: "เร็วๆ นี้",
-    genre: "🔒 กำลังพัฒนา",
-    description: "เกมใหม่จาก SanukHub กำลังจะมา...",
+    genre: ["🔒 กำลังพัฒนา"],
+    description: "เกมใหม่จาก SanukHub กำลังจะมาเร็วๆ นี้...",
     cover: null, thumb: null, available: false,
-    accent: "#475569", glow: "rgba(71,85,105,0.2)",
-    tag: "🔒 เร็วๆ นี้", tagColor: "#64748b", tagBg: "rgba(71,85,105,0.1)",
+    accent: "#334155", accentLight: "#64748b", glow: "rgba(51,65,85,0.3)",
+    tag: "เร็วๆ นี้", tagColor: "#64748b",
   },
   {
     id: "coming-3",
-    title: "???",
+    title: "Coming Soon",
     titleTH: "เร็วๆ นี้",
-    genre: "🔒 กำลังพัฒนา",
-    description: "เกมใหม่จาก SanukHub กำลังจะมา...",
+    genre: ["🔒 กำลังพัฒนา"],
+    description: "เกมใหม่จาก SanukHub กำลังจะมาเร็วๆ นี้...",
     cover: null, thumb: null, available: false,
-    accent: "#475569", glow: "rgba(71,85,105,0.2)",
-    tag: "🔒 เร็วๆ นี้", tagColor: "#64748b", tagBg: "rgba(71,85,105,0.1)",
+    accent: "#334155", accentLight: "#64748b", glow: "rgba(51,65,85,0.3)",
+    tag: "เร็วๆ นี้", tagColor: "#64748b",
   },
 ];
 
-// ─── Floating particles background ────────────────────────────────────────
-function Particles() {
-  const dots = Array.from({ length: 18 }, (_, i) => ({
-    left: `${(i * 23 + 7) % 96}%`,
-    top:  `${(i * 37 + 11) % 88}%`,
-    size: 3 + (i % 4) * 2,
-    duration: `${5 + (i % 5) * 1.4}s`,
-    delay: `${(i % 7) * 0.6}s`,
-    color: ["#6366f1","#8b5cf6","#fbbf24","#34d399","#38bdf8","#f472b6"][i % 6],
-    opacity: 0.15 + (i % 3) * 0.08,
-  }));
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {dots.map((d, i) => (
-        <div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            left: d.left, top: d.top,
-            width: d.size, height: d.size,
-            background: d.color,
-            opacity: d.opacity,
-            animation: `float ${d.duration} ease-in-out ${d.delay} infinite`,
-            filter: `blur(${d.size > 6 ? 1 : 0}px)`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ─── Play Modal ────────────────────────────────────────────────────────────
+/* ── Play Modal ─────────────────────────────────────────────────────────── */
 function PlayModal({ game, onClose }: { game: typeof GAMES[0]; onClose: () => void }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"create" | "join">("create");
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
+  const [mode, setMode]       = useState<"create" | "join">("create");
+  const [name, setName]       = useState("");
+  const [code, setCode]       = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError]     = useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); setError("");
     if (!name.trim()) { setError("ใส่ชื่อเล่นก่อนนะ"); return; }
     setLoading(true);
     try {
@@ -103,340 +70,323 @@ function PlayModal({ game, onClose }: { game: typeof GAMES[0]; onClose: () => vo
         sessionStorage.setItem("playerName", name.trim());
         router.push(`/room/${c}`);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด"); }
+    finally { setLoading(false); }
   }
 
+  const inputCls = "w-full rounded-2xl px-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200";
+  const inputStyle = { background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" };
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(16px)", animation: "fadeIn 0.2s ease-out" }}
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(20px)", animation: "fadeIn 0.2s ease-out" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div
-        className="w-full max-w-sm rounded-3xl overflow-hidden"
-        style={{
-          animation: "scaleIn 0.25s ease-out",
-          boxShadow: `0 40px 100px rgba(0,0,0,0.6), 0 0 60px ${game.glow}`,
-          border: `1px solid ${game.accent}40`,
-        }}
-      >
-        {/* Header with game thumb */}
-        <div className="relative h-28 overflow-hidden">
-          {game.cover ? (
-            <Image src={game.cover} alt={game.title} fill className="object-cover object-top" />
-          ) : (
-            <div style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", height: "100%" }} />
-          )}
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(8,10,20,0.95))" }} />
-          <div className="absolute bottom-3 left-4 right-12">
-            <h3 className="font-black text-xl text-white" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
-              {game.title}
-            </h3>
+      <div className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden"
+        style={{ animation: "slideUpFade 0.3s ease-out", boxShadow: `0 -8px 60px ${game.glow}, 0 40px 80px rgba(0,0,0,0.6)`, border: `1px solid ${game.accent}50` }}>
+        {/* Modal cover header */}
+        {game.cover && (
+          <div className="relative h-32 overflow-hidden">
+            <Image src={game.cover} alt="" fill className="object-cover object-top" style={{ filter: "brightness(0.4)" }} />
+            <div className="absolute inset-0 flex flex-col justify-end p-5"
+              style={{ background: "linear-gradient(to top, rgba(10,12,30,1), rgba(10,12,30,0.2))" }}>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-black text-white">{game.title}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                  style={{ background: `${game.tagColor}25`, color: game.tagColor }}>
+                  {game.tag}
+                </span>
+              </div>
+            </div>
+            <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all"
+              style={{ background: "rgba(0,0,0,0.6)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.1)" }}>✕</button>
           </div>
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-sm transition-all"
-            style={{ background: "rgba(0,0,0,0.5)", color: "#94a3b8" }}
-          >✕</button>
-        </div>
+        )}
 
-        {/* Form */}
-        <div className="p-5" style={{ background: "rgba(8,10,20,0.98)" }}>
+        <div className="p-5" style={{ background: "rgba(10,12,30,1)" }}>
           {/* Tabs */}
-          <div className="flex gap-1 p-1 rounded-xl mb-4" style={{ background: "rgba(255,255,255,0.05)" }}>
+          <div className="flex gap-1 p-1 rounded-2xl mb-4" style={{ background: "rgba(255,255,255,0.04)" }}>
             {(["create","join"] as const).map((m) => (
               <button key={m} id={`modal-tab-${m}`} onClick={() => setMode(m)}
-                className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200"
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
                 style={mode === m
-                  ? { background: `linear-gradient(135deg, ${game.accent}, #8b5cf6)`, color: "#fff", boxShadow: `0 4px 12px ${game.glow}` }
-                  : { color: "#64748b" }
-                }
-              >
+                  ? { background: `linear-gradient(135deg, ${game.accent}, ${game.accentLight})`, color: "#fff", boxShadow: `0 4px 16px ${game.glow}` }
+                  : { color: "#475569" }}>
                 {m === "create" ? "🏠 สร้างห้อง" : "🚪 เข้าร่วม"}
               </button>
             ))}
           </div>
 
-          <div className="space-y-3">
-            <input
-              id="modal-player-name"
-              value={name} onChange={(e) => setName(e.target.value)}
+          <form onSubmit={submit} className="space-y-3">
+            <input id="modal-player-name" value={name} onChange={(e) => setName(e.target.value)}
               maxLength={20} placeholder="ชื่อเล่น เช่น บอย" autoComplete="off"
-              className="w-full rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = game.accent; e.currentTarget.style.boxShadow = `0 0 0 3px ${game.glow}40`; }}
-              onBlur={(e)  => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.boxShadow = "none"; }}
+              className={inputCls} style={inputStyle}
+              onFocus={(e) => { e.currentTarget.style.borderColor=game.accent; e.currentTarget.style.boxShadow=`0 0 0 3px ${game.glow}30`; }}
+              onBlur={(e)  => { e.currentTarget.style.borderColor="rgba(255,255,255,0.1)"; e.currentTarget.style.boxShadow="none"; }}
             />
             {mode === "join" && (
-              <input
-                id="modal-room-code"
-                value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
+              <input id="modal-room-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
                 maxLength={4} placeholder="ABCD" autoComplete="off"
-                className="w-full rounded-xl px-4 py-3 text-center text-2xl font-mono tracking-[0.6em] uppercase text-slate-100 placeholder-slate-700 outline-none transition-all duration-200"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "#8b5cf6"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(139,92,246,0.2)"; }}
-                onBlur={(e)  => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.boxShadow = "none"; }}
+                className={`${inputCls} text-center text-2xl font-mono tracking-[0.5em]`} style={inputStyle}
+                onFocus={(e) => { e.currentTarget.style.borderColor=game.accentLight; e.currentTarget.style.boxShadow=`0 0 0 3px ${game.glow}25`; }}
+                onBlur={(e)  => { e.currentTarget.style.borderColor="rgba(255,255,255,0.1)"; e.currentTarget.style.boxShadow="none"; }}
               />
             )}
-            {error && (
-              <div className="rounded-xl px-3 py-2 text-sm" style={{ background: "rgba(251,113,133,0.12)", color: "#fb7185" }}>
-                ⚠ {error}
-              </div>
-            )}
-            <button
-              id="modal-btn-submit" type="button" onClick={handleSubmit} disabled={loading}
-              className="w-full py-3.5 rounded-xl font-black text-white transition-all duration-200 disabled:opacity-50"
-              style={{ background: `linear-gradient(135deg, ${game.accent}, #8b5cf6)`, boxShadow: `0 8px 24px ${game.glow}` }}
-              onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = `0 12px 32px ${game.glow}`; } }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 8px 24px ${game.glow}`; }}
-            >
+            {error && <div className="rounded-xl px-3 py-2 text-sm animate-slide-up" style={{ background:"rgba(251,113,133,0.12)", color:"#fb7185" }}>⚠ {error}</div>}
+            <button id="modal-btn-submit" type="submit" disabled={loading}
+              className="w-full py-4 rounded-2xl font-black text-white text-base transition-all duration-200 disabled:opacity-40"
+              style={{ background: `linear-gradient(135deg, ${game.accent}, ${game.accentLight})`, boxShadow: `0 8px 32px ${game.glow}` }}
+              onMouseEnter={(e) => { if (!loading) e.currentTarget.style.transform="translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform=""; }}>
               {loading
                 ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"/>กำลังโหลด...</span>
                 : mode === "create" ? "✨ สร้างห้องใหม่" : "🚀 เข้าร่วมเกม"}
             </button>
-          </div>
+          </form>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Main page ─────────────────────────────────────────────────────────────
+/* ── Floating particles ─────────────────────────────────────────────────── */
+function Particles({ accent }: { accent: string }) {
+  const particles = Array.from({ length: 20 }, (_, i) => ({
+    x: `${(i * 19 + 5) % 94}%`, y: `${(i * 31 + 8) % 88}%`,
+    size: 2 + (i % 5),
+    dur: `${4 + (i % 6) * 1.2}s`, delay: `${(i % 8) * 0.5}s`,
+    color: [accent, "#fbbf24", "#38bdf8", "#f472b6", "#34d399"][i % 5],
+  }));
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {particles.map((p, i) => (
+        <div key={i} className="absolute rounded-full"
+          style={{ left:p.x, top:p.y, width:p.size, height:p.size, background:p.color, opacity:0.2+i%3*0.06,
+            animation:`float ${p.dur} ease-in-out ${p.delay} infinite` }} />
+      ))}
+    </div>
+  );
+}
+
+/* ── Main launcher ──────────────────────────────────────────────────────── */
 function LauncherContent() {
   const searchParams = useSearchParams();
-  const initCode = searchParams.get("room");
-
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [showModal, setShowModal] = useState(!!initCode);
-  const [heroLoaded, setHeroLoaded] = useState(false);
-  const [animKey, setAnimKey] = useState(0); // trigger re-animation on game switch
-
+  const [showModal, setShowModal] = useState(!!searchParams.get("room"));
+  const [key, setKey] = useState(0);
   const selected = GAMES[selectedIdx];
 
-  function selectGame(idx: number) {
-    if (idx === selectedIdx) return;
-    setHeroLoaded(false);
-    setSelectedIdx(idx);
-    setAnimKey(k => k + 1);
+  function pick(i: number) {
+    if (i === selectedIdx) return;
+    setSelectedIdx(i); setKey(k => k + 1);
   }
-
-  // Parallax-lite: slightly shift background on scroll
-  useEffect(() => {
-    setHeroLoaded(true);
-  }, [selectedIdx]);
 
   return (
     <div className="relative min-h-dvh flex flex-col overflow-hidden" style={{ userSelect: "none" }}>
-      <Particles />
-
-      {/* ── Hero background ── */}
-      <div className="absolute inset-0 transition-all duration-700">
+      {/* Background */}
+      <div className="absolute inset-0">
         {selected.cover ? (
-          <>
-            {/* Blurred BG */}
-            <Image
-              src={selected.cover} alt="" fill
-              className="object-cover"
-              style={{ opacity: 0.18, filter: "blur(2px)", transform: "scale(1.05)" }}
-              priority
-            />
-            {/* Sharp center image */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div
-                className="relative w-full max-w-3xl mx-auto"
-                style={{
-                  height: "360px",
-                  animation: heroLoaded ? "slideUpFade 0.5s ease-out both" : "none",
-                }}
-              >
-                <Image
-                  src={selected.cover} alt={selected.title}
-                  fill className="object-contain drop-shadow-2xl"
-                  style={{ filter: "drop-shadow(0 8px 40px rgba(0,0,0,0.6))" }}
-                  priority
-                  onLoad={() => setHeroLoaded(true)}
-                />
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="absolute inset-0" style={{ background: "var(--bg-base)" }} />
-        )}
-
-        {/* Dark overlays */}
+          <Image src={selected.cover} alt="" fill className="object-cover object-center"
+            style={{ opacity: 0.25, filter: "blur(3px)", transform: "scale(1.08)" }} priority />
+        ) : null}
+        {/* Radial glow from right */}
+        <div className="absolute inset-0" style={{
+          background: `radial-gradient(ellipse 70% 80% at 75% 45%, ${selected.glow} 0%, transparent 65%)`
+        }} />
+        {/* Dark base overlay */}
         <div className="absolute inset-0" style={{
           background: `
-            linear-gradient(to bottom, rgba(8,10,20,0.7) 0%, rgba(8,10,20,0.05) 40%, rgba(8,10,20,0.05) 60%, rgba(8,10,20,0.98) 100%),
-            linear-gradient(to right, rgba(8,10,20,0.92) 0%, transparent 40%, transparent 60%, rgba(8,10,20,0.92) 100%)
+            linear-gradient(105deg, rgba(8,10,28,0.97) 0%, rgba(8,10,28,0.8) 38%, rgba(8,10,28,0.15) 65%, rgba(8,10,28,0.7) 100%),
+            linear-gradient(to bottom, rgba(8,10,28,0.6) 0%, transparent 20%, transparent 75%, rgba(8,10,28,1) 100%)
           `
         }} />
       </div>
 
-      {/* ── Navbar ── */}
-      <nav className="relative z-10 flex items-center justify-between px-8 pt-6 pb-2">
+      <Particles accent={selected.accent} />
+
+      {/* Navbar */}
+      <nav className="relative z-10 flex items-center justify-between px-8 py-5"
+        style={{ animation: "slideUpFade 0.4s ease-out" }}>
         <div className="flex items-center gap-6">
-          <div
-            className="flex items-center gap-2 cursor-pointer"
-            style={{ animation: "slideUpFade 0.4s ease-out" }}
-          >
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-base font-black"
-              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 0 16px rgba(99,102,241,0.5)" }}
-            >S</div>
-            <span className="font-black text-lg gradient-text tracking-tight">SanukHub</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-lg text-white"
+              style={{ background: `linear-gradient(135deg, ${selected.accent}, ${selected.accentLight})`,
+                boxShadow: `0 0 20px ${selected.glow}` }}>S</div>
+            <span className="font-black text-xl text-white tracking-tight">SanukHub</span>
           </div>
-          <div className="hidden md:flex gap-1">
+          <div className="hidden sm:flex gap-1">
             {["เกม","สื่อ"].map((t, i) => (
-              <button key={t}
-                className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200"
-                style={i === 0
-                  ? { background: "rgba(255,255,255,0.1)", color: "#e2e8f0", backdropFilter: "blur(8px)" }
-                  : { color: "#475569" }
-                }
-              >{t}</button>
+              <button key={t} className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
+                style={i===0
+                  ? { background:"rgba(255,255,255,0.08)", color:"#e2e8f0", backdropFilter:"blur(8px)" }
+                  : { color:"#475569" }}>{t}</button>
             ))}
           </div>
         </div>
-        <div
-          className="text-xs text-slate-600 hidden md:block"
-          style={{ animation: "slideUpFade 0.4s ease-out 0.1s both" }}
-        >
-          สนุกไปด้วยกัน 🎮
-        </div>
+        <p className="text-xs text-slate-600 hidden sm:block">🎮 สนุกไปด้วยกัน</p>
       </nav>
 
-      {/* ── Side info panel (left) ── */}
-      <div
-        className="relative z-10 flex-1 flex flex-col justify-end pb-52 px-8"
-        key={animKey}
-      >
-        <div className="max-w-sm" style={{ animation: "slideUpFade 0.45s ease-out 0.05s both" }}>
-          {/* Tag badge */}
-          <div
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-3"
-            style={{ background: selected.tagBg, color: selected.tagColor, border: `1px solid ${selected.tagColor}40` }}
-          >
+      {/* Hero — 2-column layout */}
+      <div className="relative z-10 flex-1 flex items-center px-8 pb-44 md:pb-36 gap-8 md:gap-16" key={key}>
+
+        {/* Left — game info */}
+        <div className="flex-1 max-w-lg" style={{ animation: "slideUpFade 0.45s ease-out 0.05s both" }}>
+          {/* Status badge */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-5"
+            style={{ background:`${selected.tagColor}15`, color:selected.tagColor,
+              border:`1px solid ${selected.tagColor}35`,
+              boxShadow: selected.available ? `0 0 16px ${selected.tagColor}20` : "none" }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse-success" style={{ background:selected.tagColor }} />
             {selected.tag}
           </div>
 
-          {/* Genre */}
-          <p className="text-slate-400 text-sm mb-3 font-medium">{selected.genre}</p>
+          {/* Title */}
+          <h1 className="font-black leading-none mb-2"
+            style={{ fontSize:"clamp(2.5rem, 6vw, 4.5rem)",
+              color:"#fff",
+              textShadow:`0 0 60px ${selected.glow}, 0 4px 20px rgba(0,0,0,0.5)`,
+              letterSpacing:"-0.02em" }}>
+            {selected.title}
+          </h1>
+          <p className="font-bold text-xl mb-5" style={{ color:selected.accentLight }}>
+            {selected.titleTH}
+          </p>
+
+          {/* Genre pills */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {selected.genre.map((g) => (
+              <span key={g} className="px-3 py-1 rounded-full text-xs font-semibold"
+                style={{ background:"rgba(255,255,255,0.07)", color:"#94a3b8",
+                  border:"1px solid rgba(255,255,255,0.08)" }}>{g}</span>
+            ))}
+          </div>
 
           {/* Description */}
-          <p className="text-slate-300 text-sm leading-relaxed mb-6 max-w-xs">{selected.description}</p>
+          <p className="text-slate-400 text-base leading-relaxed mb-8"
+            style={{ whiteSpace:"pre-line" }}>{selected.description}</p>
 
-          {/* Play button */}
+          {/* CTA */}
           {selected.available ? (
-            <button
-              id="btn-play-game"
-              onClick={() => setShowModal(true)}
-              className="relative group inline-flex items-center gap-3 px-7 py-3.5 rounded-2xl font-black text-lg text-white overflow-hidden transition-all duration-300"
-              style={{
-                background: `linear-gradient(135deg, ${selected.accent}, #8b5cf6)`,
-                boxShadow: `0 8px 32px ${selected.glow}, 0 4px 16px rgba(0,0,0,0.3)`,
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px) scale(1.03)"; e.currentTarget.style.boxShadow = `0 16px 48px ${selected.glow}, 0 4px 16px rgba(0,0,0,0.4)`; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 8px 32px ${selected.glow}, 0 4px 16px rgba(0,0,0,0.3)`; }}
-            >
-              {/* Shimmer sweep */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{ background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%)", animation: "shimmer 1.5s linear infinite" }} />
-              <span className="text-xl">▶</span>
-              <span>เล่นเลย</span>
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button id="btn-play-game" onClick={() => setShowModal(true)}
+                className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-black text-lg text-white overflow-hidden transition-all duration-300"
+                style={{ background:`linear-gradient(135deg, ${selected.accent}, ${selected.accentLight})`,
+                  boxShadow:`0 8px 40px ${selected.glow}, 0 4px 16px rgba(0,0,0,0.3)` }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px) scale(1.03)";
+                  e.currentTarget.style.boxShadow=`0 20px 60px ${selected.glow}, 0 4px 16px rgba(0,0,0,0.4)`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform="";
+                  e.currentTarget.style.boxShadow=`0 8px 40px ${selected.glow}, 0 4px 16px rgba(0,0,0,0.3)`; }}>
+                {/* Shimmer */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ background:"linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.2) 50%,transparent 70%)",
+                    animation:"shimmer 1.8s linear infinite" }} />
+                <span className="text-xl">▶</span> เล่นเลย
+              </button>
+              <button onClick={() => { setShowModal(true); }}
+                className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-semibold text-sm transition-all duration-200"
+                style={{ background:"rgba(255,255,255,0.06)", color:"#94a3b8",
+                  border:"1px solid rgba(255,255,255,0.1)" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background="rgba(255,255,255,0.1)"; e.currentTarget.style.color="#e2e8f0"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.color="#94a3b8"; }}>
+                🚪 เข้าห้อง
+              </button>
+            </div>
           ) : (
-            <button disabled
-              className="inline-flex items-center gap-3 px-7 py-3.5 rounded-2xl font-black text-lg cursor-not-allowed"
-              style={{ background: "rgba(255,255,255,0.05)", color: "#475569", border: "1px solid rgba(255,255,255,0.08)" }}
-            >🔒 เร็วๆ นี้</button>
+            <button disabled className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-lg cursor-not-allowed"
+              style={{ background:"rgba(255,255,255,0.04)", color:"#334155", border:"1px solid rgba(255,255,255,0.06)" }}>
+              🔒 เร็วๆ นี้
+            </button>
           )}
         </div>
+
+        {/* Right — floating game box art */}
+        {selected.cover && (
+          <div className="hidden lg:flex flex-1 items-center justify-center"
+            style={{ animation: "slideUpFade 0.55s ease-out 0.1s both" }}>
+            <div className="relative" style={{
+              animation: "float 5s ease-in-out infinite",
+              filter: `drop-shadow(0 32px 64px ${selected.glow}) drop-shadow(0 8px 24px rgba(0,0,0,0.6))`,
+            }}>
+              {/* Glow ring behind */}
+              <div className="absolute -inset-6 rounded-3xl opacity-30 blur-2xl"
+                style={{ background: `radial-gradient(circle, ${selected.accent}, transparent 70%)` }} />
+              {/* Cover card */}
+              <div className="relative rounded-3xl overflow-hidden"
+                style={{ width:"340px", height:"340px",
+                  border:`2px solid ${selected.accent}60`,
+                  boxShadow:`0 0 0 1px ${selected.accentLight}20, inset 0 0 0 1px rgba(255,255,255,0.1)`,
+                  transform:"rotate(-3deg)",
+                  transition:"transform 0.3s ease" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform="rotate(0deg) scale(1.03)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform="rotate(-3deg)"; }}>
+                <Image src={selected.cover} alt={selected.title} fill className="object-cover" />
+                {/* Glossy overlay */}
+                <div className="absolute inset-0"
+                  style={{ background:"linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 50%, rgba(0,0,0,0.2) 100%)" }} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── Bottom game carousel ── */}
-      <div className="relative z-10 absolute bottom-0 left-0 right-0 pb-6 px-6"
-        style={{ animation: "slideUpFade 0.5s ease-out 0.15s both" }}
-      >
-        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-3 px-1">
-          เกมทั้งหมด
-        </p>
-        <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-          {GAMES.map((game, idx) => {
-            const isActive = idx === selectedIdx;
-            return (
-              <button
-                key={game.id}
-                id={`game-card-${game.id}`}
-                onClick={() => selectGame(idx)}
-                className="flex-shrink-0 relative rounded-2xl overflow-hidden transition-all duration-350 group"
-                style={{
-                  width: "150px",
-                  height: "90px",
-                  border: `2px solid ${isActive ? game.accent : "rgba(255,255,255,0.06)"}`,
-                  boxShadow: isActive ? `0 0 28px ${game.glow}, 0 8px 24px rgba(0,0,0,0.4)` : "0 4px 12px rgba(0,0,0,0.3)",
-                  transform: isActive ? "translateY(-6px) scale(1.06)" : "none",
-                  transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                }}
-              >
-                {/* Thumbnail */}
-                {game.thumb ? (
-                  <Image
-                    src={game.thumb} alt={game.title} fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
-                    style={{ opacity: game.available ? 1 : 0.25 }}
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1"
-                    style={{ background: "rgba(255,255,255,0.03)" }}
-                  >
-                    <span className="text-2xl opacity-20">🎮</span>
-                    <span className="text-[9px] text-slate-700 font-semibold">เร็วๆ นี้</span>
+      {/* Bottom — game carousel */}
+      <div className="relative z-10 absolute bottom-0 left-0 right-0 pb-6"
+        style={{ animation: "slideUpFade 0.5s ease-out 0.2s both" }}>
+        {/* Frosted glass bar */}
+        <div className="mx-4 rounded-2xl px-5 py-4"
+          style={{ background:"rgba(8,10,28,0.85)", backdropFilter:"blur(20px)",
+            border:"1px solid rgba(255,255,255,0.07)",
+            boxShadow:"0 -8px 32px rgba(0,0,0,0.3)" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-3">
+            เกมทั้งหมด
+          </p>
+          <div className="flex gap-3 overflow-x-auto" style={{ scrollbarWidth:"none" }}>
+            {GAMES.map((game, idx) => {
+              const active = idx === selectedIdx;
+              return (
+                <button key={game.id} id={`game-card-${game.id}`} onClick={() => pick(idx)}
+                  className="flex-shrink-0 relative rounded-xl overflow-hidden group transition-all duration-350"
+                  style={{ width:"160px", height:"95px",
+                    border:`2px solid ${active ? game.accent : "rgba(255,255,255,0.06)"}`,
+                    boxShadow: active ? `0 0 24px ${game.glow}, 0 8px 24px rgba(0,0,0,0.4)` : "none",
+                    transform: active ? "translateY(-4px)" : "none",
+                    transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)" }}>
+                  {/* Thumbnail */}
+                  {game.thumb
+                    ? <Image src={game.thumb} alt={game.title} fill className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        style={{ opacity: game.available ? 1 : 0.2 }} />
+                    : <div className="absolute inset-0 flex items-center justify-center"
+                        style={{ background:"rgba(255,255,255,0.03)" }}>
+                        <span className="text-3xl opacity-15">🎮</span>
+                      </div>}
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 transition-all duration-300"
+                    style={{ background: active
+                      ? "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 50%)"
+                      : "rgba(0,0,0,0.4)" }} />
+                  {/* Label */}
+                  <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2">
+                    <p className="text-[11px] font-black text-white truncate"
+                      style={{ textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>
+                      {game.available ? game.title : "เร็วๆ นี้"}
+                    </p>
+                    {active && <p className="text-[9px] mt-0.5" style={{ color:game.accentLight }}>{game.tag}</p>}
                   </div>
-                )}
-
-                {/* Overlay */}
-                <div className="absolute inset-0 transition-all duration-300"
-                  style={{ background: isActive ? "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" : "rgba(0,0,0,0.35)" }}
-                />
-
-                {/* Active glow ring */}
-                {isActive && (
-                  <div className="absolute inset-0 rounded-2xl"
-                    style={{ boxShadow: `inset 0 0 0 2px ${game.accent}60` }}
-                  />
-                )}
-
-                {/* Title */}
-                <div className="absolute bottom-0 left-0 right-0 px-2 pb-2">
-                  <p className="text-[11px] font-black text-white truncate"
-                    style={{ textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}
-                  >
-                    {game.available ? game.title : "เร็วๆ นี้"}
-                  </p>
-                </div>
-
-                {/* Active dot */}
-                {isActive && (
-                  <div className="absolute top-2 right-2 w-2 h-2 rounded-full animate-pulse-success"
-                    style={{ background: game.tagColor, boxShadow: `0 0 8px ${game.tagColor}` }}
-                  />
-                )}
-
-                {/* Hover shimmer */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                  style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%)" }}
-                />
-              </button>
-            );
-          })}
+                  {/* Active dot */}
+                  {active && (
+                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full"
+                      style={{ background:game.tagColor, boxShadow:`0 0 8px ${game.tagColor}`, animation:"pulse-success 2s infinite" }} />
+                  )}
+                  {/* Shimmer on hover */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity"
+                    style={{ background:"linear-gradient(135deg, rgba(255,255,255,0.07), transparent 60%)" }} />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* ── Modal ── */}
       {showModal && <PlayModal game={selected} onClose={() => setShowModal(false)} />}
     </div>
   );
