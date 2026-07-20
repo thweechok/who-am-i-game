@@ -13,6 +13,7 @@ interface SetupBody {
   /** AI mode: request N answers for a topic, auto-assign */
   aiTopic?: string;
   aiAssign?: boolean;
+  difficulty?: "easy" | "medium" | "hard";
 }
 
 /** POST /api/rooms/[code]/setup
@@ -44,8 +45,10 @@ export async function POST(
   // --- AI assign mode ---
   if (body.aiAssign) {
     const topic = (body.aiTopic ?? "").toString().trim() || "ทั่วไป";
+    const difficulty = (["easy","medium","hard"].includes(body.difficulty ?? "") ? body.difficulty! : "medium") as "easy" | "medium" | "hard";
     room.setupMode = "ai";
     room.topic = topic;
+    room.difficulty = difficulty;
 
     // collect players who still need an answer
     const need = room.players.filter((p) => !room.answers[p.id]);
@@ -55,6 +58,7 @@ export async function POST(
     const { answers, source } = await generateAnswers({
       topic,
       count: need.length,
+      difficulty,
     });
     // shuffle so mapping isn't predictable
     const pool = [...answers].sort(() => Math.random() - 0.5);

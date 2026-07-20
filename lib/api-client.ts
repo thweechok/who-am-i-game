@@ -72,12 +72,14 @@ export async function setupManual(
 export async function setupAI(
   code: string,
   playerId: string,
-  topic: string
+  topic: string,
+  difficulty: "easy" | "medium" | "hard" = "medium"
 ) {
   return postJson(`/api/rooms/${code}/setup`, {
     playerId,
     aiAssign: true,
     aiTopic: topic,
+    difficulty,
   }) as Promise<{ ok: boolean; assigned: number; source: string }>;
 }
 

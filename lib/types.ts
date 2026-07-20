@@ -50,6 +50,8 @@ export interface RoomState {
   /** true when someone has asked a question and we are waiting for an answer
    *  before advancing to the next turn */
   waitingForAnswer: boolean;
+  /** AI difficulty for answer generation */
+  difficulty: "easy" | "medium" | "hard";
   createdAt: number;
 }
 
@@ -73,6 +75,8 @@ export interface PublicRoomState {
   finishers: string[];
   /** mirrors RoomState.waitingForAnswer — lets clients show answer buttons */
   waitingForAnswer: boolean;
+  /** AI difficulty */
+  difficulty: "easy" | "medium" | "hard";
   createdAt: number;
 }
 

@@ -42,6 +42,7 @@ export function emptyRoom(code: string, host: Player): RoomState {
     ],
     finishers: [],
     waitingForAnswer: false,
+    difficulty: "medium",
     createdAt: Date.now(),
   };
 }
@@ -92,6 +93,7 @@ export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
     chat: room.chat,
     finishers: room.finishers,
     waitingForAnswer: room.waitingForAnswer ?? false,
+    difficulty: room.difficulty ?? "medium",
     createdAt: room.createdAt,
   };
 }
@@ -376,6 +378,7 @@ export function startNextRound(room: RoomState): { ok: boolean; error?: string }
   room.answers = {};
   room.setupMode = "manual";
   room.topic = "";
+  room.difficulty = "medium";
   pushChat(room, {
     fromId: null,
     fromName: "ระบบ",
