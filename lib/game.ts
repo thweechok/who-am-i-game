@@ -94,7 +94,9 @@ export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
     topic: room.topic,
     players: room.players,
     answers: others,
-    myAnswer: room.answers[viewerId] ?? null,
+    // During playing phase, HIDE own answer — the whole game is guessing!
+    // Only reveal in setup (so they know it's assigned) and ended (results)
+    myAnswer: room.status === "playing" ? null : (room.answers[viewerId] ?? null),
     turnOrder: room.turnOrder,
     currentTurnIdx: room.currentTurnIdx,
     currentTurnId,

@@ -174,7 +174,7 @@ export function Playing({
           roundDurationSeconds={room.roundDurationSeconds ?? 420}
           onTimeUp={handleTimeUp}
         />
-        {/* My answer card */}
+        {/* My answer card — HIDDEN! The whole game is guessing what's on your head */}
         <div
           className="p-4 text-center"
           style={{
@@ -187,8 +187,11 @@ export function Playing({
           <div className="text-[10px] font-bold uppercase tracking-widest text-indigo-400/70 mb-1">
             คำตอบบนหัวคุณ
           </div>
-          <div className="text-xl font-bold text-indigo-200">
-            {room.myAnswer === null ? "❓ ยังไม่รู้ — ต้องทาย!" : room.myAnswer}
+          <div className="text-3xl font-bold text-indigo-300" style={{ textShadow: "0 0 20px rgba(99,102,241,0.5)" }}>
+            ❓
+          </div>
+          <div className="text-xs text-indigo-400/50 mt-1">
+            ถามคำถาม yes/no เพื่อทายว่าคุณคือใคร!
           </div>
         </div>
 
