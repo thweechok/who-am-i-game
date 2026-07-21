@@ -134,20 +134,20 @@ const TurnTimer = memo(function TurnTimer({
 
   return (
     <div className={`flex items-center gap-3 px-4 py-2 rounded-xl mb-3 ${isUrgentTimer ? "timer-urgent" : ""}`} style={{
-      background: isDanger ? "rgba(255,107,107,0.15)" : isMyTurn ? "rgba(255,140,66,0.1)" : "rgba(151,117,250,0.1)",
-      border: `2px solid ${isDanger ? "rgba(255,107,107,0.4)" : isMyTurn ? "rgba(255,140,66,0.3)" : "rgba(151,117,250,0.2)"}`,
+      background: isUrgentTimer ? "rgba(255,107,107,0.15)" : isMyTurn ? "rgba(255,140,66,0.1)" : "rgba(151,117,250,0.1)",
+      border: `2px solid ${isUrgentTimer ? "rgba(255,107,107,0.4)" : isMyTurn ? "rgba(255,140,66,0.3)" : "rgba(151,117,250,0.2)"}`,
     }}>
-      <span className="text-sm font-bold" style={{ color: isDanger ? "#FF6B6B" : isMyTurn ? "#FF8C42" : "#a89cc8" }}>
+      <span className="text-sm font-bold" style={{ color: isUrgentTimer ? "#FF6B6B" : isMyTurn ? "#FF8C42" : "#a89cc8" }}>
         ⏳ ตา{isMyTurn ? "คุณ" : ""}
       </span>
       <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
         <div className="h-full transition-all duration-500 rounded-full" style={{
           width: `${pct}%`,
-          background: isDanger ? "#FF6B6B" : isMyTurn ? "#FF8C42" : "#9775FA",
+          background: isUrgentTimer ? "#FF6B6B" : isMyTurn ? "#FF8C42" : "#9775FA",
         }} />
       </div>
-      <span className={`text-lg font-black tabular-nums ${isDanger ? "animate-pulse" : ""}`} style={{
-        color: isDanger ? "#FF6B6B" : "#e2e8f0",
+      <span className={`text-lg font-black tabular-nums ${isUrgentTimer ? "animate-pulse" : ""}`} style={{
+        color: isUrgentTimer ? "#FF6B6B" : "#e2e8f0",
       }}>
         {secs}s
       </span>
