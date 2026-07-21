@@ -469,29 +469,24 @@ export function Playing({
             </div>
           )}
 
-          {/* ── Q&A History — inline question/answer log ── */}
+          {/* ── Q&A History — only MY questions ── */}
           {(() => {
-            const qaItems: { q: string; a: string; qBy: string }[] = [];
+            const qaItems: { q: string; a: string }[] = [];
             for (let i = 0; i < room.chat.length; i++) {
               const msg = room.chat[i];
-              if (msg.type === "question") {
-                // Look for the next answer
+              if (msg.type === "question" && msg.fromId === playerId) {
                 const ans = room.chat.find((m, j) => j > i && m.type === "answer");
-                qaItems.push({
-                  q: msg.text,
-                  a: ans?.text ?? "⏳",
-                  qBy: msg.fromName,
-                });
+                qaItems.push({ q: msg.text, a: ans?.text ?? "⏳" });
               }
             }
             if (qaItems.length === 0) return null;
             return (
               <div className="rounded-2xl p-4 space-y-2" style={{ ...cartoonCard, maxHeight: "220px", overflowY: "auto" }}>
-                <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "#7c6aab" }}>📋 ประวัติคำถาม</div>
+                <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "#7c6aab" }}>📋 คำถามของคุณ ({qaItems.length})</div>
                 {qaItems.map((item, i) => (
                   <div key={i} className="rounded-xl px-3 py-2" style={{ background: "rgba(26,10,46,0.4)", borderLeft: "3px solid #4DACF7" }}>
                     <div className="text-sm font-bold" style={{ color: "#74C0FC" }}>
-                      {item.qBy}: {item.q}
+                      {i + 1}. {item.q}
                     </div>
                     <div className="text-xs font-bold mt-1" style={{ color: "#c4b5fd" }}>
                       → {item.a}
