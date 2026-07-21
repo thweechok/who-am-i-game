@@ -189,7 +189,7 @@ export function Playing({
       />
 
       {/* ── Player Answer Cards ── */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         {room.players.filter(p => !p.isSpectator).map((p) => {
           const isMe = p.id === playerId;
           const isCurrent = p.id === room.currentTurnId;
@@ -198,44 +198,43 @@ export function Playing({
           return (
             <div
               key={p.id}
-              className="flex flex-col items-center text-center p-3 rounded-2xl transition-all duration-300"
+              className="flex flex-col items-center text-center p-4 transition-all duration-300"
               style={{
-                background: "rgba(37,21,69,0.6)",
+                background: isCurrent ? "rgba(255,140,66,0.12)" : "rgba(37,21,69,0.7)",
                 borderRadius: "16px",
-                border: isCurrent ? "2px solid #FF8C42" : "2px solid rgba(151,117,250,0.2)",
-                boxShadow: isCurrent ? "0 0 0 4px #FF8C42, 0 8px 16px rgba(255,140,66,0.3)" : "0 4px 12px rgba(0,0,0,0.08)",
-                animation: isCurrent ? "bounceGlow 2s ease-in-out infinite" : undefined,
-                opacity: p.guessedCorrectly ? 0.5 : 1,
+                border: isCurrent ? "3px solid #FF8C42" : "2px solid rgba(151,117,250,0.2)",
+                boxShadow: isCurrent ? "0 0 20px rgba(255,140,66,0.3)" : "0 4px 16px rgba(0,0,0,0.3)",
+                opacity: p.guessedCorrectly ? 0.6 : 1,
               }}
             >
-              {/* Avatar / Image */}
-              <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center mb-2 flex-shrink-0"
+              {/* Avatar / Image — SQUARE */}
+              <div className="w-full aspect-square rounded-xl overflow-hidden flex items-center justify-center mb-3"
                 style={{
-                  border: isCurrent ? "4px solid #FF8C42" : "3px solid #E0E0E0",
-                  background: isMe ? "linear-gradient(135deg, #A855F7, #D946EF)" : "rgba(26,10,46,0.8)",
+                  border: isCurrent ? "4px solid #FF8C42" : "3px solid rgba(151,117,250,0.3)",
+                  background: isMe ? "linear-gradient(135deg, #7C3AED, #D946EF)" : "rgba(26,10,46,0.8)",
                 }}
               >
                 {isMe ? (
-                  <span className="text-3xl text-white font-bold drop-shadow-md">❓</span>
+                  <span className="text-5xl drop-shadow-lg">❓</span>
                 ) : imgUrl ? (
                   <img src={imgUrl} alt="" className="w-full h-full object-cover"
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                 ) : (
-                  <span className="text-3xl">🤡</span>
+                  <span className="text-5xl">🤡</span>
                 )}
               </div>
               {/* Answer name */}
-              <div className="text-sm font-black truncate w-full px-1"
-                style={{ color: isMe ? "#D946EF" : p.guessedCorrectly ? "#51CF66" : "#e2e8f0" }}>
+              <div className="text-base font-black truncate w-full"
+                style={{ color: isMe ? "#D946EF" : p.guessedCorrectly ? "#51CF66" : "#ffffff" }}>
                 {isMe ? "ทายสิ!" : p.guessedCorrectly ? "✅ ทายถูก" : (answer ?? "?")}
               </div>
               {/* Player name */}
-              <div className="text-xs font-semibold truncate w-full mt-1" style={{ color: isCurrent ? "#FF8C42" : "#a89cc8" }}>
-                {isMe ? "คุณ" : p.name}
+              <div className="text-sm font-bold truncate w-full mt-1" style={{ color: isCurrent ? "#FF8C42" : "#c4b5fd" }}>
+                {p.name}
                 {isCurrent && <span className="ml-1">🎯</span>}
               </div>
               {/* Score */}
-              <div className="text-xs font-black mt-1 bg-[rgba(37,21,69,0.4)] rounded-full px-2 py-0.5" style={{ color: "#4DACF7" }}>
+              <div className="text-sm font-black mt-2 rounded-full px-3 py-1" style={{ background: "rgba(77,172,247,0.15)", color: "#74C0FC" }}>
                 {p.score} pt
               </div>
             </div>
@@ -307,6 +306,7 @@ export function Playing({
 
               {/* Vote buttons — only if I can answer */}
               {canAnswer && (
+                <>
                 <div className="grid grid-cols-3 gap-3">
                   {([
                     { val: "yes" as const, label: "✅ ใช่", bg: "#51CF66", shadow: "#37B24D" },
@@ -366,6 +366,7 @@ export function Playing({
                     </div>
                   </div>
                 )}
+                </>
               )}
 
               {/* Already voted indicator */}

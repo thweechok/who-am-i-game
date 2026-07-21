@@ -366,7 +366,12 @@ export function applyAction(
       });
 
       room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
-      room.currentQuestion = null;
+
+      // Auto-advance turn to next player after question is answered
+      advanceTurn(room);
+      if (isRoundOver(room)) {
+        endRound(room);
+      }
     }
 
     return { ok: true };
