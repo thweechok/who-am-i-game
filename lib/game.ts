@@ -285,6 +285,8 @@ export function applyAction(
   // ──── TURN TIME UP (per-turn timer expired) ────
   if (payload.type === "turnTimeUp") {
     if (room.status !== "playing") return { ok: false, error: "เกมไม่ได้กำลังเล่น" };
+    // Don't skip turn if waiting for votes — timer pauses during voting
+    if (room.waitingForAnswer) return { ok: false, error: "กำลังรอโหวต" };
     const turnStart = room.turnStartedAt ?? 0;
     const turnDur = (room.turnTimerSeconds ?? 40) * 1000;
     if (turnStart > 0 && Date.now() - turnStart >= turnDur - 2000) { // 2s tolerance
@@ -296,8 +298,6 @@ export function applyAction(
           text: `⏰ หมดเวลา ${room.turnTimerSeconds} วิ — ${currentP.name} ข้ามตา`,
         });
       }
-      // Cancel any pending question
-      room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
       advanceTurn(room);
       if (isRoundOver(room)) {
         endRound(room);
@@ -562,12 +562,15 @@ function endRound(room: RoomState) {
 /** Start a fresh round: new answers required (host re-runs setup) or reuse. */
 export function startNextRound(room: RoomState): { ok: boolean; error?: string } {
   if (room.status !== "ended") return { ok: false, error: "ยังไม่จบรอบ" };
+  // Check round limit
+  if (room.round >= (room.totalRounds ?? 1)) return { ok: false, error: "จบเกมแล้ว ครบทุกรอบ" };
   const active = room.players.filter(p => !p.isSpectator);
   if (active.length < 2) return { ok: false, error: "ผู้เล่นไม่พอ (ต้องอย่างน้อย 2 คน)" };
   room.status = "setup";
   room.round += 1;
   room.finishers = [];
-  room.currentTurnIdx = 0;
+  // Rotate starting player — round N starts from player index (N-1)
+  room.currentTurnIdx = (room.round - 1) % room.turnOrder.length;
   room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
   for (const p of room.players) {
     p.guessedCorrectly = false;
@@ -583,7 +586,7 @@ export function startNextRound(room: RoomState): { ok: boolean; error?: string }
     fromId: null,
     fromName: "ระบบ",
     type: "system",
-    text: `เริ่มรอบ ${room.round} — ตั้งคำตอบใหม่`,
+    text: `🔄 เริ่มรอบ ${room.round}/${room.totalRounds ?? 1} — ตั้งคำตอบใหม่`,
   });
   return { ok: true };
 }

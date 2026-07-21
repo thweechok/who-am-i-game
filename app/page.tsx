@@ -309,6 +309,26 @@ function PlayModal({ game, onClose, initialRoomCode }: { game: typeof GAMES[0]; 
                 ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"/>กำลังโหลด...</span>
                 : mode === "create" ? "✨ สร้างห้องใหม่" : "🚀 เข้าร่วมเกม"}
             </button>
+            {mode === "join" && (
+              <button type="button" disabled={loading}
+                className="w-full py-3 rounded-2xl font-bold text-sm transition-all duration-200 disabled:opacity-40"
+                style={{ background: "rgba(255,255,255,0.05)", color: "#a89cc8", border: "1px solid rgba(151,117,250,0.2)" }}
+                onClick={async () => {
+                  if (!name.trim()) { setError("ใส่ชื่อก่อนนะ"); return; }
+                  const c = code.trim().toUpperCase();
+                  if (!c) { setError("ใส่รหัสห้องด้วย"); return; }
+                  setLoading(true); setError("");
+                  try {
+                    const res = await joinRoom(c, name, true);
+                    sessionStorage.setItem("playerId", res.playerId);
+                    sessionStorage.setItem("playerName", name.trim());
+                    router.push(`/room/${c}`);
+                  } catch (err) { setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด"); }
+                  finally { setLoading(false); }
+                }}>
+                👀 เข้าดูเป็นคนดู (Spectator)
+              </button>
+            )}
           </form>
         </div>
       </div>

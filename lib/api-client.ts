@@ -23,8 +23,8 @@ export async function createRoom(name: string) {
   }>;
 }
 
-export async function joinRoom(code: string, name: string) {
-  return postJson(`/api/rooms/${code}/join`, { name }) as Promise<{
+export async function joinRoom(code: string, name: string, isSpectator?: boolean) {
+  return postJson(`/api/rooms/${code}/join`, { name, isSpectator }) as Promise<{
     playerId: string;
     reconnected?: boolean;
   }>;
