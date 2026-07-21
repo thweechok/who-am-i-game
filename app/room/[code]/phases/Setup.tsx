@@ -134,7 +134,7 @@ export function Setup({
     p.id === playerId ? room.myAnswerAssigned : !!room.answers[p.id]
   ).length;
   const needAnswer     = activePlayers.filter(p =>
-    p.id === playerId ? room.myAnswer === null : !room.answers[p.id]
+    p.id === playerId ? !room.myAnswerAssigned : !room.answers[p.id]
   );
   const progressPct    = activePlayers.length > 0 ? Math.round((readyCount / activePlayers.length) * 100) : 0;
   const effectiveTopic = useCustom ? customTopic.trim() : selectedTopic;
