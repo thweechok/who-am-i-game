@@ -412,7 +412,8 @@ export function applyAction(
         text: `➡️ ${player.name} ผ่าน — ยกเลิกคำถามที่ค้างอยู่`,
       });
     }
-    player.guessedThisRound = true; // mark as used up
+    // NOTE: do NOT set guessedThisRound here — passing just skips this turn,
+    // the player should get another turn when it cycles back
     pushChat(room, {
       fromId: null,
       fromName: "ระบบ",
