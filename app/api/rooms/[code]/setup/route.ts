@@ -66,25 +66,20 @@ export async function POST(
     need.forEach((p, i) => {
       room.answers[p.id] = pool[i % pool.length] || "ไม่ทราบ";
     });
-    // Fetch images from Wikipedia (fire-and-forget, non-blocking)
-    // Save room first so setup completes instantly
-    await saveRoom(room);
-    
-    // Background: fetch images and save again
+    // Fetch images from Wikipedia (await with timeout — Vercel kills function after response)
     const newAnswers: Record<string, string> = {};
     need.forEach((p, i) => { newAnswers[p.id] = pool[i % pool.length] || ""; });
-    getImagesForAnswers(newAnswers).then(async (images) => {
+    try {
+      const images = await Promise.race([
+        getImagesForAnswers(newAnswers),
+        new Promise<Record<string, string>>((resolve) => setTimeout(() => resolve({}), 5000)),
+      ]);
       if (Object.keys(images).length > 0) {
-        try {
-          const freshRoom = await getRoom(code);
-          if (freshRoom) {
-            freshRoom.answerImages = { ...(freshRoom.answerImages ?? {}), ...images };
-            await saveRoom(freshRoom);
-          }
-        } catch { /* best-effort */ }
+        room.answerImages = { ...(room.answerImages ?? {}), ...images };
       }
-    }).catch(() => { /* images are optional */ });
+    } catch { /* images optional */ }
     
+    await saveRoom(room);
     return Response.json({ ok: true, assigned: need.length, source });
   }
 
