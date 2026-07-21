@@ -8,7 +8,7 @@ import type { PublicRoomState } from "./types";
 // - Fast (playing): need responsiveness on whose turn → 3s
 // - Slow (lobby/setup/ended): low urgency → 10s (saves ~3x commands)
 const FAST_POLL_MS = 3000;
-const SLOW_POLL_MS = 10000;
+const SLOW_POLL_MS = 2000;
 
 // Show a "reconnecting" banner after this many consecutive silent errors
 const ERROR_THRESHOLD = 3;
