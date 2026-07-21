@@ -51,9 +51,10 @@ export async function fetchRoom(
 export async function startGame(
   code: string,
   playerId: string,
-  phase: "setup" | "playing"
+  phase: "setup" | "playing",
+  totalRounds?: number
 ) {
-  return postJson(`/api/rooms/${code}/start`, { playerId, phase });
+  return postJson(`/api/rooms/${code}/start`, { playerId, phase, totalRounds });
 }
 
 /** @deprecated Manual mode removed — use setupAI only */

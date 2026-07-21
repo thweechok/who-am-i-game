@@ -62,6 +62,7 @@ export function Ended({
   const roundWinnerId = room.finishers[0] ?? null;
   const iWonRound = roundWinnerId === playerId;
   const iWon = winner?.id === playerId;
+  const isGameOver = room.round >= (room.totalRounds ?? 1);
 
   async function handleNext() {
     setLoading(true);
@@ -102,7 +103,7 @@ export function Ended({
           🏆
         </div>
         <h2 className="relative text-3xl font-black mb-1" style={{ color: "#e2e8f0" }}>
-          จบรอบที่ {room.round}
+          {isGameOver ? "🏆 จบเกม!" : `จบรอบที่ ${room.round}/${room.totalRounds ?? 1}`}
         </h2>
         {winner && (
           <p className="relative text-base font-bold" style={{ color: "#a89cc8" }}>
@@ -298,7 +299,7 @@ export function Ended({
                 <span className="w-6 h-6 rounded-full border-4 border-white/30 border-t-white animate-spin" />
                 ...
               </span>
-            ) : "🔄 เริ่มรอบใหม่"}
+            ) : isGameOver ? "🏆 จบเกม — ดูคะแนนสรุป" : `🔄 รอบถัดไป (${room.round + 1}/${room.totalRounds ?? 1})`}
           </button>
         ) : (
           <div
@@ -311,7 +312,7 @@ export function Ended({
             }}
           >
             <span className="animate-blink mr-2">⏳</span>
-            รอ host เริ่มรอบใหม่...
+            {isGameOver ? "🏆 จบเกมแล้ว!" : "รอ host เริ่มรอบถัดไป..."}
           </div>
         )}
         <button

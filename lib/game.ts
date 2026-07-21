@@ -50,6 +50,9 @@ export function emptyRoom(code: string, host: Player): RoomState {
     questionsThisTurn: 0,
     roundStartedAt: 0,
     roundDurationSeconds: 420,
+    turnStartedAt: 0,
+    turnTimerSeconds: 40,
+    totalRounds: 1,
     createdAt: Date.now(),
   };
 }
@@ -113,6 +116,9 @@ export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
     questionsThisTurn: room.questionsThisTurn ?? 0,
     roundStartedAt: room.roundStartedAt ?? 0,
     roundDurationSeconds: room.roundDurationSeconds ?? 420,
+    turnStartedAt: room.turnStartedAt ?? 0,
+    turnTimerSeconds: room.turnTimerSeconds ?? 40,
+    totalRounds: room.totalRounds ?? 1,
     isSpectator,
     // In ended phase all answers are revealed to everyone
     allAnswers: (isSpectator || room.status === "ended") ? { ...room.answers } : {},
@@ -180,7 +186,9 @@ export function beginPlaying(room: RoomState): { ok: boolean; error?: string } {
   room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
   room.questionsThisTurn = 0;
   room.roundStartedAt = Date.now();
+  room.turnStartedAt = Date.now();
   room.turnOrder = room.players.filter(p => !p.isSpectator).map((p) => p.id);
+  // Shuffle turn order
   for (let i = room.turnOrder.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [room.turnOrder[i], room.turnOrder[j]] = [room.turnOrder[j], room.turnOrder[i]];
@@ -195,7 +203,7 @@ export function beginPlaying(room: RoomState): { ok: boolean; error?: string } {
     fromId: null,
     fromName: "ระบบ",
     type: "system",
-    text: `เริ่มเกม! ถามได้คนละ ${room.maxQuestionsPerTurn} ข้อต่อตา + โบนัส 2 ข้อ ⏱️ เวลา ${Math.floor((room.roundDurationSeconds ?? 420) / 60)} นาที`,
+    text: `🎮 รอบที่ ${room.round}/${room.totalRounds ?? 1} — ถามได้คนละ 1 คำถามต่อตา ⏱️ ${Math.floor((room.roundDurationSeconds ?? 420) / 60)} นาที | ⏳ ${room.turnTimerSeconds ?? 40} วิ/ตา`,
   });
   return { ok: true };
 }
@@ -218,8 +226,9 @@ function advanceTurn(room: RoomState) {
     const pid = room.turnOrder[room.currentTurnIdx];
     const p = findPlayer(room, pid);
     if (p && !p.guessedCorrectly && !p.guessedThisRound) {
-      // Reset question counter for the new player's turn
+      // Reset question counter and turn timer for the new player's turn
       room.questionsThisTurn = 0;
+      room.turnStartedAt = Date.now();
       return;
     }
   }
@@ -252,6 +261,31 @@ export function applyAction(
       return { ok: true };
     }
     return { ok: false, error: "ยังไม่หมดเวลา" };
+  }
+
+  // ──── TURN TIME UP (per-turn timer expired) ────
+  if (payload.type === "turnTimeUp") {
+    if (room.status !== "playing") return { ok: false, error: "เกมไม่ได้กำลังเล่น" };
+    const turnStart = room.turnStartedAt ?? 0;
+    const turnDur = (room.turnTimerSeconds ?? 40) * 1000;
+    if (turnStart > 0 && Date.now() - turnStart >= turnDur - 2000) { // 2s tolerance
+      const currentPid = room.turnOrder[room.currentTurnIdx % room.turnOrder.length];
+      const currentP = findPlayer(room, currentPid);
+      if (currentP) {
+        pushChat(room, {
+          fromId: null, fromName: "ระบบ", type: "system",
+          text: `⏰ หมดเวลา ${room.turnTimerSeconds} วิ — ${currentP.name} ข้ามตา`,
+        });
+      }
+      // Cancel any pending question
+      room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
+      advanceTurn(room);
+      if (isRoundOver(room)) {
+        endRound(room);
+      }
+      return { ok: true };
+    }
+    return { ok: false, error: "ยังไม่หมดเวลาตา" };
   }
 
   if (room.status !== "playing") {

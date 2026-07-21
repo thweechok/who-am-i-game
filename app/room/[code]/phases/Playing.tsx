@@ -61,6 +61,62 @@ const CountdownTimer = memo(function CountdownTimer({
   );
 });
 
+/* ── Turn Timer — per-turn countdown (40s default) ── */
+const TurnTimer = memo(function TurnTimer({
+  turnStartedAt,
+  turnTimerSeconds,
+  onTurnTimeUp,
+  isMyTurn,
+}: {
+  turnStartedAt: number;
+  turnTimerSeconds: number;
+  onTurnTimeUp: () => void;
+  isMyTurn: boolean;
+}) {
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  useEffect(() => {
+    if (!turnStartedAt || turnStartedAt === 0) return;
+    const endTime = turnStartedAt + turnTimerSeconds * 1000;
+    function tick() {
+      const remaining = Math.max(0, endTime - Date.now());
+      setTimeLeft(remaining);
+      if (remaining === 0) onTurnTimeUp();
+    }
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, [turnStartedAt, turnTimerSeconds, onTurnTimeUp]);
+
+  if (!turnStartedAt || turnStartedAt === 0) return null;
+
+  const secs = Math.ceil(timeLeft / 1000);
+  const pct = turnTimerSeconds > 0 ? (timeLeft / (turnTimerSeconds * 1000)) * 100 : 0;
+  const isDanger = secs <= 10 && secs > 0;
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2 rounded-xl mb-3" style={{
+      background: isDanger ? "rgba(255,107,107,0.15)" : isMyTurn ? "rgba(255,140,66,0.1)" : "rgba(151,117,250,0.1)",
+      border: `2px solid ${isDanger ? "rgba(255,107,107,0.4)" : isMyTurn ? "rgba(255,140,66,0.3)" : "rgba(151,117,250,0.2)"}`,
+    }}>
+      <span className="text-sm font-bold" style={{ color: isDanger ? "#FF6B6B" : isMyTurn ? "#FF8C42" : "#a89cc8" }}>
+        ⏳ ตา{isMyTurn ? "คุณ" : ""}
+      </span>
+      <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+        <div className="h-full transition-all duration-500 rounded-full" style={{
+          width: `${pct}%`,
+          background: isDanger ? "#FF6B6B" : isMyTurn ? "#FF8C42" : "#9775FA",
+        }} />
+      </div>
+      <span className={`text-lg font-black tabular-nums ${isDanger ? "animate-pulse" : ""}`} style={{
+        color: isDanger ? "#FF6B6B" : "#e2e8f0",
+      }}>
+        {secs}s
+      </span>
+    </div>
+  );
+});
+
 export function Playing({
   room,
   playerId,
@@ -86,6 +142,13 @@ export function Playing({
     // Only host or current-turn player sends timeUp to avoid race condition
     if (isMyTurn || amHost) {
       sendAction(room.code, playerId, { type: "timeUp" }).catch(() => {});
+    }
+  }, [room.code, playerId, isMyTurn, amHost]);
+
+  const handleTurnTimeUp = useCallback(() => {
+    // Only current-turn player or host sends turnTimeUp
+    if (isMyTurn || amHost) {
+      sendAction(room.code, playerId, { type: "turnTimeUp" }).catch(() => {});
     }
   }, [room.code, playerId, isMyTurn, amHost]);
 
@@ -186,6 +249,13 @@ export function Playing({
         roundStartedAt={room.roundStartedAt ?? 0}
         roundDurationSeconds={room.roundDurationSeconds ?? 420}
         onTimeUp={handleTimeUp}
+      />
+
+      <TurnTimer
+        turnStartedAt={room.turnStartedAt ?? 0}
+        turnTimerSeconds={room.turnTimerSeconds ?? 40}
+        onTurnTimeUp={handleTurnTimeUp}
+        isMyTurn={isMyTurn}
       />
 
       {/* ── Player Answer Cards ── */}

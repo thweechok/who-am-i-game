@@ -122,6 +122,7 @@ export function Setup({
   const [customTopic, setCustomTopic]     = useState<string>("");
   const [useCustom, setUseCustom]         = useState(false);
   const [difficulty, setDifficulty]       = useState<Difficulty>("medium");
+  const [totalRounds, setTotalRounds]     = useState(1);
   const [activeGroup, setActiveGroup]     = useState<string>("กีฬา");
 
   const [loading, setLoading] = useState(false);
@@ -156,7 +157,7 @@ export function Setup({
   async function handleStart() {
     setLoading(true); setError("");
     try {
-      await startGame(room.code, playerId, "playing");
+      await startGame(room.code, playerId, "playing", totalRounds);
       onRefresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "error");
@@ -301,6 +302,29 @@ export function Setup({
                       border: "2px solid #DFE6E9",
                     }}>
                     {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Round count */}
+            <div>
+              <p className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: "#e2e8f0" }}>🎮 จำนวนรอบ</p>
+              <div className="grid grid-cols-3 gap-3">
+                {[1, 3, 5].map(n => (
+                  <button key={n} onClick={() => setTotalRounds(n)}
+                    className="py-3 px-2 text-sm font-bold text-center transition-all rounded-full cartoon-press"
+                    style={totalRounds === n ? {
+                      backgroundColor: "#4DACF7",
+                      color: "#fff",
+                      boxShadow: "0 4px 0 #228BE6",
+                      border: "none",
+                    } : {
+                      backgroundColor: "rgba(37,21,69,0.6)",
+                      color: "#a89cc8",
+                      border: "2px solid #DFE6E9",
+                    }}>
+                    {n} รอบ
                   </button>
                 ))}
               </div>

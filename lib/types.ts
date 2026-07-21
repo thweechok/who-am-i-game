@@ -46,6 +46,8 @@ export interface RoomState {
   turnOrder: string[];
   currentTurnIdx: number;
   round: number;
+  /** total rounds to play (default 1) */
+  totalRounds: number;
   chat: ChatMessage[];
   /** ranked finishers this round (playerIds in order) for scoring */
   finishers: string[];
@@ -59,10 +61,14 @@ export interface RoomState {
   difficulty: "easy" | "medium" | "hard";
   maxQuestionsPerTurn: number;
   questionsThisTurn: number;
-  /** unix ms when playing phase started (for countdown timer) */
+  /** unix ms when playing phase started (for round countdown timer) */
   roundStartedAt: number;
   /** round duration in seconds (default 420 = 7 min) */
   roundDurationSeconds: number;
+  /** unix ms when current turn started (for per-turn countdown) */
+  turnStartedAt: number;
+  /** seconds per turn (default 40) */
+  turnTimerSeconds: number;
   createdAt: number;
 }
 
@@ -85,6 +91,7 @@ export interface PublicRoomState {
   currentTurnIdx: number;
   currentTurnId: string | null;
   round: number;
+  totalRounds: number;
   chat: ChatMessage[];
   finishers: string[];
   /** mirrors RoomState.waitingForAnswer — lets clients show answer buttons */
@@ -96,6 +103,8 @@ export interface PublicRoomState {
   questionsThisTurn: number;
   roundStartedAt: number;
   roundDurationSeconds: number;
+  turnStartedAt: number;
+  turnTimerSeconds: number;
   /** true if the viewer is a spectator */
   isSpectator: boolean;
   /** all answers — only populated for spectators */
@@ -110,4 +119,5 @@ export type ActionPayload =
   | { type: "guess"; text: string }
   | { type: "pass" }
   | { type: "setMaxQuestions"; value: number }
-  | { type: "timeUp" };
+  | { type: "timeUp" }
+  | { type: "turnTimeUp" };

@@ -12,7 +12,7 @@ export async function POST(
   ctx: RouteContext<"/api/rooms/[code]">
 ) {
   const { code } = await ctx.params;
-  let body: { playerId?: string; phase?: "setup" | "playing" } = {};
+  let body: { playerId?: string; phase?: "setup" | "playing"; totalRounds?: number } = {};
   try {
     body = await request.json();
   } catch {
@@ -27,6 +27,11 @@ export async function POST(
   if (!room) return Response.json({ error: "ไม่พบห้อง" }, { status: 404 });
   if (room.hostId !== playerId) {
     return Response.json({ error: "เฉพาะ host เท่านั้น" }, { status: 403 });
+  }
+
+  // Apply totalRounds if provided
+  if (body.totalRounds && body.totalRounds >= 1 && body.totalRounds <= 10) {
+    room.totalRounds = body.totalRounds;
   }
 
   const result =
