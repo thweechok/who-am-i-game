@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, memo } from "react";
 import type { PublicRoomState, ChatMessage } from "@/lib/types";
 import { sendAction, getAIAnswer } from "@/lib/api-client";
+import { playSound } from "@/lib/sounds";
 
 /* ── PlayerImage — tries proxy, falls back to letter ── */
 function PlayerImage({ src, fallbackText }: { src: string; fallbackText: string }) {
@@ -119,10 +120,20 @@ const TurnTimer = memo(function TurnTimer({
 
   const secs = Math.ceil(timeLeft / 1000);
   const pct = turnTimerSeconds > 0 ? (timeLeft / (turnTimerSeconds * 1000)) * 100 : 0;
-  const isDanger = secs <= 10 && secs > 0;
+  const isUrgentTimer = secs <= 10 && secs > 0;
+  const prevSecsRef = useRef(secs);
+
+  useEffect(() => {
+    if (secs !== prevSecsRef.current) {
+      prevSecsRef.current = secs;
+      if (isUrgentTimer) {
+        playSound("tick");
+      }
+    }
+  }, [secs, isUrgentTimer]);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 rounded-xl mb-3" style={{
+    <div className={`flex items-center gap-3 px-4 py-2 rounded-xl mb-3 ${isUrgentTimer ? "timer-urgent" : ""}`} style={{
       background: isDanger ? "rgba(255,107,107,0.15)" : isMyTurn ? "rgba(255,140,66,0.1)" : "rgba(151,117,250,0.1)",
       border: `2px solid ${isDanger ? "rgba(255,107,107,0.4)" : isMyTurn ? "rgba(255,140,66,0.3)" : "rgba(151,117,250,0.2)"}`,
     }}>
@@ -162,8 +173,46 @@ export function Playing({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<{ answer: string; reason: string; source: string } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const prevRoomRef = useRef(room);
+  const [floatingReactions, setFloatingReactions] = useState<Array<{id: string; emoji: string; x: string}>>([]);
+  const prevReactionsRef = useRef<string>('');
 
   const amHost = room.hostId === playerId;
+
+  function addLocalReaction(emoji: string) {
+    const id = Date.now().toString() + Math.random();
+    const x = `${15 + Math.random() * 70}%`;
+    setFloatingReactions(prev => [...prev, { id, emoji, x }]);
+    setTimeout(() => setFloatingReactions(prev => prev.filter(r => r.id !== id)), 2100);
+  }
+
+  useEffect(() => {
+    const key = JSON.stringify(room.reactions?.slice(-5));
+    if (key === prevReactionsRef.current) return;
+    prevReactionsRef.current = key;
+    const recent = (room.reactions ?? []).filter(r => Date.now() - r.at < 3000 && r.fromId !== playerId);
+    recent.forEach(r => addLocalReaction(r.emoji));
+  }, [room.reactions, playerId]);
+
+  useEffect(() => {
+    const prev = prevRoomRef.current;
+    if (!prev.waitingForAnswer && room.waitingForAnswer) {
+      playSound("question");
+    }
+    room.players.forEach(p => {
+      const prevP = prev.players.find(old => old.id === p.id);
+      if (prevP && !prevP.guessedCorrectly && p.guessedCorrectly) {
+        playSound("correct");
+      }
+    });
+    if (room.chat.length > prev.chat.length) {
+      const newMsg = room.chat[room.chat.length - 1];
+      if (newMsg.type === "guess" && !newMsg.correct) {
+        playSound("wrong");
+      }
+    }
+    prevRoomRef.current = room;
+  }, [room]);
 
   const handleTimeUp = useCallback(() => {
     // Only host or current-turn player sends timeUp to avoid race condition
@@ -182,6 +231,12 @@ export function Playing({
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [room.chat.length]);
+
+  useEffect(() => {
+    const handler = () => { navigator.sendBeacon(`/api/rooms/${room.code}/leave`, JSON.stringify({ playerId })); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [room.code, playerId]);
 
   const canAct = !!(me && !me.guessedThisRound && !me.guessedCorrectly);
   // Can I answer? Not my turn, waiting for answer, and I haven't guessed correctly
@@ -285,8 +340,34 @@ export function Playing({
         isMyTurn={isMyTurn}
       />
 
+      {/* Floating reactions */}
+      <div className="fixed inset-0 z-40 pointer-events-none overflow-hidden">
+        {floatingReactions.map(r => (
+          <div key={r.id} className="reaction-float absolute text-4xl"
+            style={{ left: r.x, bottom: '80px', animation: 'floatUp 2s ease-out forwards' }}>
+            {r.emoji}
+          </div>
+        ))}
+      </div>
+
+      {/* Reaction Bar */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex gap-2 px-4 py-2 rounded-full"
+        style={{ background: 'rgba(10,10,30,0.8)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        {['😂','😮','🔥','👏','😱','💀'].map(emoji => (
+          <button key={emoji}
+            className="text-2xl w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-75 hover:scale-125"
+            style={{ background: 'rgba(255,255,255,0.08)', touchAction: 'manipulation' }}
+            onClick={() => {
+              sendAction(room.code, playerId, { type: 'react', emoji }).catch(() => {});
+              addLocalReaction(emoji);
+            }}>
+            {emoji}
+          </button>
+        ))}
+      </div>
+
       {/* ── Player Answer Cards ── */}
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="player-cards-scroll grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         {room.players.filter(p => !p.isSpectator).map((p) => {
           const isMe = p.id === playerId;
           const isCurrent = p.id === room.currentTurnId;
@@ -378,9 +459,9 @@ export function Playing({
 
           {/* ── VOTING POPUP MODAL ── */}
           {room.waitingForAnswer && room.currentQuestion && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
               style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", animation: "fadeIn 0.2s ease-out" }}>
-              <div className="w-full max-w-md rounded-3xl overflow-hidden"
+              <div className="vote-modal-card w-full max-w-md rounded-3xl overflow-hidden"
                 style={{
                   background: "linear-gradient(160deg, #1e1045 0%, #0f0825 100%)",
                   border: "3px solid #4DACF7",
@@ -435,7 +516,7 @@ export function Playing({
                           onClick={() => handleAnswer(val)}
                           disabled={loading}
                           className="py-4 rounded-xl text-base font-black transition-all active:scale-95 disabled:opacity-50"
-                          style={{ background: bg, color: "#1a0a2e", boxShadow: `0 5px 0 ${shadow}`, border: "none" }}
+                          style={{ background: bg, color: "#1a0a2e", boxShadow: `0 5px 0 ${shadow}`, border: "none", touchAction: "manipulation" }}
                           onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(5px)"; e.currentTarget.style.boxShadow = "none"; }}
                           onMouseUp={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 5px 0 ${shadow}`; }}
                           onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 5px 0 ${shadow}`; }}
@@ -507,7 +588,7 @@ export function Playing({
             }
             if (qaItems.length === 0) return null;
             return (
-              <div className="rounded-2xl p-4 space-y-2" style={{ ...cartoonCard, maxHeight: "220px", overflowY: "auto" }}>
+              <div className="qa-history rounded-2xl p-4 space-y-2" style={{ ...cartoonCard, overflowY: "auto" }}>
                 <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "#7c6aab" }}>📋 คำถามของคุณ ({qaItems.length})</div>
                 {qaItems.map((item, i) => (
                   <div key={i} className="rounded-xl px-3 py-2" style={{ background: "rgba(26,10,46,0.4)", borderLeft: "3px solid #4DACF7" }}>

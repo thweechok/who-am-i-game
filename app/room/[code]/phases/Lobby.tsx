@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
 import type { PublicRoomState } from "@/lib/types";
-import { startGame, sendAction } from "@/lib/api-client";
+import { startGame, sendAction, leaveRoom } from "@/lib/api-client";
 
 const lobbyStyles = `
   @keyframes slideUpFade {
@@ -145,6 +146,17 @@ export function Lobby({
     setTimeout(() => setCopied(false), 1800);
   }
 
+  useEffect(() => {
+    const handler = () => { navigator.sendBeacon(`/api/rooms/${room.code}/leave`, JSON.stringify({ playerId })); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [room.code, playerId]);
+
+  async function handleLeave() {
+    await leaveRoom(room.code, playerId);
+    window.location.href = '/';
+  }
+
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6">
       <style>{lobbyStyles}</style>
@@ -170,6 +182,11 @@ export function Lobby({
             marginBottom: "4px"
           }}>
           {copied ? "✓ คัดลอกสำเร็จ!" : "🔗 คัดลอกลิงก์เชิญเพื่อน"}
+        </button>
+
+        <button onClick={handleLeave}
+          className="mt-2 px-6 py-2 rounded-full font-bold text-white transition-transform active:scale-95 bg-red-500 shadow-sm">
+          🚪 ออกจากห้อง
         </button>
       </div>
 

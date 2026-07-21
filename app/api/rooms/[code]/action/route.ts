@@ -61,6 +61,8 @@ export async function POST(
     payload = { type: "timeUp" };
   } else if (rawType === "turnTimeUp") {
     payload = { type: "turnTimeUp" };
+  } else if (rawType === "react") {
+    payload = { type: "react", emoji: (body.emoji as string) ?? "" };
   } else {
     return Response.json({ error: "action ไม่ถูกต้อง" }, { status: 400 });
   }

@@ -251,3 +251,30 @@ body {
     radial-gradient(ellipse at 60% 80%, rgba(255,140,66,0.05) 0%, transparent 50%),
     var(--bg-base);
 }
+
+/* --- Added Features CSS --- */
+@media (max-width: 640px) {
+  .vote-modal-card { max-height: 90vh; overflow-y: auto; }
+  .player-cards-scroll { overflow-x: auto; display: flex; flex-wrap: nowrap; }
+  .qa-history { max-height: 150px !important; }
+}
+
+@keyframes urgentPulse {
+  0%, 100% { background: rgba(239,68,68,0.25); box-shadow: 0 0 20px rgba(239,68,68,0.4); }
+  50% { background: rgba(239,68,68,0.5); box-shadow: 0 0 40px rgba(239,68,68,0.7); }
+}
+.timer-urgent {
+  animation: urgentPulse 0.5s ease-in-out infinite !important;
+  color: #ef4444 !important;
+  font-size: 2.5rem !important;
+}
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  80% { opacity: 0.8; }
+  100% { opacity: 0; transform: translateY(-160px) scale(1.6); }
+}
+.reaction-float {
+  animation: floatUp 2s ease-out forwards;
+  pointer-events: none;
+}

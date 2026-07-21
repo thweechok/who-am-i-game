@@ -97,3 +97,7 @@ export async function getAIAnswer(
     characterId,
   }) as Promise<{ ok: boolean; answer: "yes" | "no" | "maybe"; reason: string; source: string; characterName: string }>;
 }
+
+export async function leaveRoom(code: string, playerId: string) {
+  return postJson(`/api/rooms/${code}/leave`, { playerId });
+}

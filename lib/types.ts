@@ -70,6 +70,7 @@ export interface RoomState {
   /** seconds per turn (default 40) */
   turnTimerSeconds: number;
   createdAt: number;
+  reactions?: Array<{ id: string; fromId: string; fromName: string; emoji: string; at: number }>;
 }
 
 /** Public-facing room state: answers of OTHER players visible, own answer hidden */
@@ -110,6 +111,7 @@ export interface PublicRoomState {
   /** all answers — only populated for spectators */
   allAnswers: Record<string, string>;
   createdAt: number;
+  reactions?: Array<{ id: string; fromId: string; fromName: string; emoji: string; at: number }>;
 }
 
 /** Action types posted to /api/rooms/[code]/action */
@@ -123,4 +125,5 @@ export type ActionPayload =
   | { type: "setTotalRounds"; value: number }
   | { type: "setTurnTimer"; value: number }
   | { type: "timeUp" }
-  | { type: "turnTimeUp" };
+  | { type: "turnTimeUp" }
+  | { type: "react"; emoji: string };

@@ -124,6 +124,7 @@ export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
     allAnswers: (isSpectator || room.status === "ended") ? { ...room.answers } : {},
     answerImages: room.answerImages ?? {},
     createdAt: room.createdAt,
+    reactions: room.reactions ?? [],
   };
 }
 
@@ -270,6 +271,19 @@ export function applyAction(
     return { ok: true };
   }
 
+  const player = findPlayer(room, playerId);
+  if (!player) return { ok: false, error: "ไม่พบผู้เล่น" };
+
+  if (payload.type === 'react') {
+    const emoji = (payload as any).emoji as string;
+    const allowed = ['😂','😮','🔥','👏','😱','💀'];
+    if (!allowed.includes(emoji)) return { ok: false, error: 'emoji ไม่ถูกต้อง' };
+    if (!room.reactions) room.reactions = [];
+    room.reactions.push({ id: Date.now().toString() + Math.random(), fromId: playerId, fromName: player.name, emoji, at: Date.now() });
+    if (room.reactions.length > 30) room.reactions.splice(0, room.reactions.length - 30);
+    return { ok: true };
+  }
+
   // ──── TIME UP (works from any status with timer) ────
   if (payload.type === "timeUp") {
     if (room.status !== "playing") return { ok: false, error: "เกมไม่ได้กำลังเล่น" };
@@ -316,8 +330,6 @@ export function applyAction(
     room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
   }
 
-  const player = findPlayer(room, playerId);
-  if (!player) return { ok: false, error: "ไม่พบผู้เล่น" };
   if (player.guessedCorrectly) {
     return { ok: false, error: "คุณทายถูกแล้ว รอจบรอบ" };
   }
@@ -590,3 +602,16 @@ export function startNextRound(room: RoomState): { ok: boolean; error?: string }
   });
   return { ok: true };
 }
+
+export function migrateHost(room: RoomState, leavingPlayerId: string): void {
+  if (room.hostId !== leavingPlayerId) return;
+  const candidates = room.players.filter(p => p.id !== leavingPlayerId && !p.isSpectator);
+  if (candidates.length === 0) return;
+  const newHost = candidates[0];
+  room.hostId = newHost.id;
+  pushChat(room, {
+    fromId: null, fromName: 'ระบบ', type: 'system',
+    text: `👑 ${newHost.name} เป็น Host คนใหม่`,
+  });
+}
+
