@@ -298,7 +298,7 @@ export function Playing({
                       </div>
                       <span className="font-bold text-sm" style={{ color: "#e2e8f0" }}>{p.name}</span>
                       <span className="ml-auto text-xs font-bold" style={{ color: vote ? (vote === "yes" ? "#51CF66" : vote === "no" ? "#FF6B6B" : "#FFD43B") : "#7c6aab" }}>
-                        {vote ? (vote === "yes" ? "ใช่" : vote === "no" ? "ไม่ใช่" : "อาจจะ") : "รอตอบ..."}
+                        {vote ? (vote === "yes" ? "ใช่" : vote === "no" ? "ไม่ใช่" : "ไม่รู้") : "รอตอบ..."}
                       </span>
                     </div>
                   );
@@ -311,7 +311,7 @@ export function Playing({
                   {([
                     { val: "yes" as const, label: "✅ ใช่", bg: "#51CF66", shadow: "#37B24D" },
                     { val: "no" as const, label: "❌ ไม่ใช่", bg: "#FF6B6B", shadow: "#F03E3E" },
-                    { val: "maybe" as const, label: "🤔 อาจจะ", bg: "#FFD43B", shadow: "#F59F00" },
+                    { val: "maybe" as const, label: "🤷 ไม่รู้", bg: "#FFD43B", shadow: "#F59F00" },
                   ] as const).map(({ val, label, bg, shadow }) => (
                     <button
                       key={val}
@@ -328,6 +328,44 @@ export function Playing({
                     </button>
                   ))}
                 </div>
+
+                {/* AI Help button */}
+                <button
+                  id="btn-ai-answer"
+                  onClick={handleAIAnswer}
+                  disabled={aiLoading || loading}
+                  className="mt-3 w-full py-3 rounded-full text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{
+                    background: "rgba(77,172,247,0.12)",
+                    border: "2px solid rgba(116,192,252,0.3)",
+                    color: "#74C0FC",
+                  }}
+                >
+                  {aiLoading ? (
+                    <><span className="w-4 h-4 rounded-full border-2 border-[#74C0FC] border-t-transparent animate-spin" />กำลังถาม AI...</>
+                  ) : (
+                    <>🤖 ไม่รู้? ถาม AI ช่วยตอบ</>
+                  )}
+                </button>
+
+                {/* AI result card */}
+                {aiResult && (
+                  <div className="mt-3 rounded-xl p-4 animate-slide-up" style={{ background: "rgba(77,172,247,0.1)", border: "2px solid rgba(116,192,252,0.3)" }}>
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl flex-shrink-0">🤖</span>
+                      <div>
+                        <p className="text-sm font-black mb-1" style={{ color: "#74C0FC" }}>
+                          AI แนะนำ:{" "}
+                          <span style={{ color: aiResult.answer === "yes" ? "#51CF66" : aiResult.answer === "no" ? "#FF6B6B" : "#FFD43B" }}>
+                            {aiResult.answer === "yes" ? "✅ ใช่" : aiResult.answer === "no" ? "❌ ไม่ใช่" : "🤷 ไม่รู้"}
+                          </span>
+                        </p>
+                        <p className="text-xs font-medium leading-relaxed" style={{ color: "#c4b5fd" }}>{aiResult.reason}</p>
+                        <p className="text-[10px] mt-2 font-bold" style={{ color: "#7c6aab" }}>กดปุ่มด้านบนเพื่อยืนยันคำตอบ</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               )}
 
               {/* Already voted indicator */}
@@ -590,7 +628,7 @@ function ChatBubble({
       <span>
         {icon}{" "}
         {msg.type === "answer"
-          ? msg.text === "yes" ? "ใช่" : msg.text === "no" ? "ไม่ใช่" : "อาจจะ"
+          ? msg.text === "yes" ? "ใช่" : msg.text === "no" ? "ไม่ใช่" : "ไม่รู้"
           : msg.text}
       </span>
     </div>

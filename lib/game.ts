@@ -344,7 +344,7 @@ export function applyAction(
       const voteLines = eligibleVoters.map(p => {
         const v = room.votes[p.id];
         const emoji = v === "yes" ? "✅" : v === "no" ? "❌" : "🤔";
-        const label = v === "yes" ? "ใช่" : v === "no" ? "ไม่ใช่" : "อาจจะ";
+        const label = v === "yes" ? "ใช่" : v === "no" ? "ไม่ใช่" : "ไม่รู้";
         return `${p.name}: ${emoji} ${label}`;
       }).join(" | ");
 
