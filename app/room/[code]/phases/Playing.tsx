@@ -159,10 +159,10 @@ export function Playing({
   }
 
   const cartoonCard = {
-    background: "#FFFFFF",
+    background: "rgba(37,21,69,0.6)",
     borderRadius: "16px",
     boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-    border: "2px solid #E0E0E0",
+    border: "2px solid rgba(151,117,250,0.2)",
   };
 
   const spectators = room.players.filter(p => p.isSpectator);
@@ -193,9 +193,9 @@ export function Playing({
               key={p.id}
               className="flex flex-col items-center text-center p-3 rounded-2xl transition-all duration-300"
               style={{
-                background: "#FFFFFF",
+                background: "rgba(37,21,69,0.6)",
                 borderRadius: "16px",
-                border: isCurrent ? "2px solid #FF8C42" : "2px solid #E0E0E0",
+                border: isCurrent ? "2px solid #FF8C42" : "2px solid rgba(151,117,250,0.2)",
                 boxShadow: isCurrent ? "0 0 0 4px #FF8C42, 0 8px 16px rgba(255,140,66,0.3)" : "0 4px 12px rgba(0,0,0,0.08)",
                 animation: isCurrent ? "bounceGlow 2s ease-in-out infinite" : undefined,
                 opacity: p.guessedCorrectly ? 0.5 : 1,
@@ -205,7 +205,7 @@ export function Playing({
               <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center mb-2 flex-shrink-0"
                 style={{
                   border: isCurrent ? "4px solid #FF8C42" : "3px solid #E0E0E0",
-                  background: isMe ? "linear-gradient(135deg, #A855F7, #D946EF)" : "#FFF8F0",
+                  background: isMe ? "linear-gradient(135deg, #A855F7, #D946EF)" : "rgba(26,10,46,0.8)",
                 }}
               >
                 {isMe ? (
@@ -219,11 +219,11 @@ export function Playing({
               </div>
               {/* Answer name */}
               <div className="text-sm font-black truncate w-full px-1"
-                style={{ color: isMe ? "#D946EF" : p.guessedCorrectly ? "#51CF66" : "#2D3436" }}>
+                style={{ color: isMe ? "#D946EF" : p.guessedCorrectly ? "#51CF66" : "#e2e8f0" }}>
                 {isMe ? "ทายสิ!" : p.guessedCorrectly ? "✅ ทายถูก" : (answer ?? "?")}
               </div>
               {/* Player name */}
-              <div className="text-xs font-semibold truncate w-full mt-1" style={{ color: isCurrent ? "#FF8C42" : "#636E72" }}>
+              <div className="text-xs font-semibold truncate w-full mt-1" style={{ color: isCurrent ? "#FF8C42" : "#a89cc8" }}>
                 {isMe ? "คุณ" : p.name}
                 {isCurrent && <span className="ml-1">🎯</span>}
               </div>
@@ -237,7 +237,7 @@ export function Playing({
       </div>
       
       {spectators.length > 0 && (
-        <div className="text-center text-sm font-semibold mt-2" style={{ color: "#636E72" }}>
+        <div className="text-center text-sm font-semibold mt-2" style={{ color: "#a89cc8" }}>
           👀 ผู้ชม: {spectators.map(s => s.name).join(", ")}
         </div>
       )}
@@ -247,7 +247,7 @@ export function Playing({
         {/* Left: Actions */}
         <div className="space-y-4">
           {/* Turn info banner */}
-          <div style={{...cartoonCard, background: isMyTurn ? "#FF8C42" : "#FFFFFF", border: isMyTurn ? "none" : "2px solid #E0E0E0"}} className="p-4 rounded-2xl">
+          <div style={{...cartoonCard, background: isMyTurn ? "#FF8C42" : "rgba(37,21,69,0.6)", border: isMyTurn ? "none" : "2px solid rgba(151,117,250,0.2)"}} className="p-4 rounded-2xl">
             {isMyTurn && !room.waitingForAnswer && canAct ? (
               <div className="text-center">
                 <div className="text-xl font-black text-white mb-1 drop-shadow-sm">
@@ -263,7 +263,7 @@ export function Playing({
               </div>
             ) : (
               <div className="text-center">
-                <div className="text-sm font-bold" style={{ color: "#636E72" }}>
+                <div className="text-sm font-bold" style={{ color: "#a89cc8" }}>
                   ⌛ รอตา <span style={{ color: "#FF8C42", fontSize: "1.1em" }}>{room.players.find((p) => p.id === room.currentTurnId)?.name ?? "..."}</span>
                 </div>
               </div>
@@ -276,8 +276,8 @@ export function Playing({
               <div className="text-xs font-black mb-2" style={{ color: "#F59F00" }}>
                 ⏳ รอคำตอบ
               </div>
-              <div className="text-lg font-black" style={{ color: "#2D3436" }}>❓ {lastQuestion.text}</div>
-              <div className="text-xs mt-2 font-semibold" style={{ color: "#636E72" }}>ถามโดย {lastQuestion.fromName}</div>
+              <div className="text-lg font-black" style={{ color: "#e2e8f0" }}>❓ {lastQuestion.text}</div>
+              <div className="text-xs mt-2 font-semibold" style={{ color: "#a89cc8" }}>ถามโดย {lastQuestion.fromName}</div>
             </div>
           )}
 
@@ -303,9 +303,9 @@ export function Playing({
               </p>
               <div className="grid grid-cols-3 gap-3">
                 {([
-                  { val: "yes" as const, label: "✅ ใช่", color: "#FFFFFF", bg: "#51CF66", shadow: "#37B24D" },
-                  { val: "no" as const, label: "❌ ไม่ใช่", color: "#FFFFFF", bg: "#FF6B6B", shadow: "#F03E3E" },
-                  { val: "maybe" as const, label: "🤔 อาจจะ", color: "#2D3436", bg: "#FFD43B", shadow: "#F59F00" },
+                  { val: "yes" as const, label: "✅ ใช่", color: "rgba(37,21,69,0.6)", bg: "#51CF66", shadow: "#37B24D" },
+                  { val: "no" as const, label: "❌ ไม่ใช่", color: "rgba(37,21,69,0.6)", bg: "#FF6B6B", shadow: "#F03E3E" },
+                  { val: "maybe" as const, label: "🤔 อาจจะ", color: "#e2e8f0", bg: "#FFD43B", shadow: "#F59F00" },
                 ] as const).map(({ val, label, color, bg, shadow }) => (
                   <button
                     key={val}
@@ -317,12 +317,12 @@ export function Playing({
                       background: bg,
                       color,
                       border: "none",
-                      boxShadow: aiResult?.answer === val ? `0 6px 0 \${shadow}, 0 0 15px \${bg}` : `0 4px 0 \${shadow}`,
+                      boxShadow: aiResult?.answer === val ? `0 6px 0 ${shadow}, 0 0 15px ${bg}` : `0 4px 0 ${shadow}`,
                       transform: aiResult?.answer === val ? "scale(1.05) translateY(-2px)" : "none",
                     }}
                     onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(4px)"; e.currentTarget.style.boxShadow = "none"; }}
-                    onMouseUp={(e) => { e.currentTarget.style.transform = aiResult?.answer === val ? "scale(1.05) translateY(-2px)" : ""; e.currentTarget.style.boxShadow = aiResult?.answer === val ? `0 6px 0 \${shadow}, 0 0 15px \${bg}` : `0 4px 0 \${shadow}`; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = aiResult?.answer === val ? "scale(1.05) translateY(-2px)" : ""; e.currentTarget.style.boxShadow = aiResult?.answer === val ? `0 6px 0 \${shadow}, 0 0 15px \${bg}` : `0 4px 0 \${shadow}`; }}
+                    onMouseUp={(e) => { e.currentTarget.style.transform = aiResult?.answer === val ? "scale(1.05) translateY(-2px)" : ""; e.currentTarget.style.boxShadow = aiResult?.answer === val ? `0 6px 0 ${shadow}, 0 0 15px ${bg}` : `0 4px 0 ${shadow}`; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = aiResult?.answer === val ? "scale(1.05) translateY(-2px)" : ""; e.currentTarget.style.boxShadow = aiResult?.answer === val ? `0 6px 0 ${shadow}, 0 0 15px ${bg}` : `0 4px 0 ${shadow}`; }}
                   >
                     {label}
                     {aiResult?.answer === val && (
@@ -394,9 +394,9 @@ export function Playing({
                         ? {
                             background: m === "guess" ? "#FF6B6B" : "#4DACF7",
                             color: "#FFF",
-                            boxShadow: `0 3px 0 \${m === "guess" ? "#F03E3E" : "#228BE6"}`,
+                            boxShadow: `0 3px 0 ${m === "guess" ? "#F03E3E" : "#228BE6"}`,
                           }
-                        : { color: "#636E72", background: "transparent" }
+                        : { color: "#a89cc8", background: "transparent" }
                     }
                   >
                     {m === "ask" ? "❓ ถาม" : "🎯 ทาย (เสี่ยง!)"}
@@ -413,14 +413,14 @@ export function Playing({
                   }
                   className="flex-1 rounded-full px-4 py-3 text-sm text-[#2D3436] font-medium outline-none transition-all duration-200"
                   style={{
-                    background: "#FFFFFF",
-                    border: "2px solid #E0E0E0",
+                    background: "rgba(37,21,69,0.6)",
+                    border: "2px solid rgba(151,117,250,0.2)",
                   }}
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = mode === "guess" ? "#FF6B6B" : "#4DACF7";
                   }}
                   onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "#E0E0E0";
+                    e.currentTarget.style.borderColor = "rgba(151,117,250,0.15)";
                   }}
                 />
                 <button
@@ -430,12 +430,12 @@ export function Playing({
                   className="px-6 py-3 rounded-full text-sm font-black text-white disabled:opacity-50 transition-all duration-150"
                   style={{
                     background: mode === "guess" ? "#FF6B6B" : "#4DACF7",
-                    boxShadow: `0 4px 0 \${mode === "guess" ? "#F03E3E" : "#228BE6"}`,
+                    boxShadow: `0 4px 0 ${mode === "guess" ? "#F03E3E" : "#228BE6"}`,
                     border: "none"
                   }}
                   onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(4px)"; e.currentTarget.style.boxShadow = "none"; }}
-                  onMouseUp={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 4px 0 \${mode === "guess" ? "#F03E3E" : "#228BE6"}`; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 4px 0 \${mode === "guess" ? "#F03E3E" : "#228BE6"}`; }}
+                  onMouseUp={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 4px 0 ${mode === "guess" ? "#F03E3E" : "#228BE6"}`; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 4px 0 ${mode === "guess" ? "#F03E3E" : "#228BE6"}`; }}
                 >
                   {mode === "guess" ? "ทาย!" : "ส่ง"}
                 </button>
@@ -453,7 +453,7 @@ export function Playing({
             /* Not my turn, not waiting — just wait */
             <div className="text-center py-6">
               <div className="text-4xl mb-3" style={{ animation: "pop 2s infinite" }}>⌛</div>
-              <p className="text-base font-bold" style={{ color: "#636E72" }}>
+              <p className="text-base font-bold" style={{ color: "#a89cc8" }}>
                 รอตา{" "}
                 <span style={{ color: "#FF8C42" }}>
                   {room.players.find((p) => p.id === room.currentTurnId)?.name ?? "..."}
@@ -465,7 +465,7 @@ export function Playing({
           {error && (
             <div
               className="mt-3 rounded-xl px-4 py-3 text-sm font-bold animate-fade-in text-center"
-              style={{ background: "#FFE3E3", color: "#C92A2A", border: "2px solid #FF8787" }}
+              style={{ background: "rgba(255,107,107,0.15)", color: "#C92A2A", border: "2px solid #FF8787" }}
             >
               {error}
             </div>
@@ -493,7 +493,7 @@ function ChatPanel({
     <div
       className="rounded-2xl flex flex-col h-[460px] md:h-auto md:max-h-[600px]"
       style={{
-        background: "#FFFFFF",
+        background: "rgba(37,21,69,0.6)",
         border: "2px solid #A5D8FF",
         boxShadow: "0 4px 12px rgba(77,172,247,0.15)",
       }}
@@ -544,7 +544,7 @@ function ChatBubble({
       if (msg.text === "yes") {
         return { background: "#D3F9D8", color: "#2B8A3E", border: "2px solid #8CE99A", boxShadow: "0 2px 0 #8CE99A" };
       } else if (msg.text === "no") {
-        return { background: "#FFE3E3", color: "#C92A2A", border: "2px solid #FFC9C9", boxShadow: "0 2px 0 #FFC9C9" };
+        return { background: "rgba(255,107,107,0.15)", color: "#C92A2A", border: "2px solid rgba(255,107,107,0.3)", boxShadow: "0 2px 0 #FFC9C9" };
       } else {
         return { background: "#FFF3BF", color: "#E67700", border: "2px solid #FFEC99", boxShadow: "0 2px 0 #FFEC99" };
       }
@@ -552,7 +552,7 @@ function ChatBubble({
     // guess
     return msg.correct
       ? { background: "#D3F9D8", color: "#2B8A3E", border: "2px solid #8CE99A", boxShadow: "0 2px 0 #8CE99A" }
-      : { background: "#FFE3E3", color: "#C92A2A", border: "2px solid #FFC9C9", boxShadow: "0 2px 0 #FFC9C9" };
+      : { background: "rgba(255,107,107,0.15)", color: "#C92A2A", border: "2px solid rgba(255,107,107,0.3)", boxShadow: "0 2px 0 #FFC9C9" };
   })();
 
   const icon =

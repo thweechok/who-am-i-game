@@ -74,8 +74,8 @@ export function Ended({
   }
 
   const cardStyle = {
-    background: "#FFFFFF",
-    border: "2px solid #E0E0E0",
+    background: "rgba(37,21,69,0.6)",
+    border: "2px solid rgba(151,117,250,0.2)",
     borderRadius: "16px",
     boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
   };
@@ -87,8 +87,8 @@ export function Ended({
         className="relative p-7 text-center overflow-hidden"
         style={{
           ...cardStyle,
-          background: iWon ? "#FFF9DB" : "#FFFFFF",
-          border: iWon ? "2px solid #FFD43B" : "2px solid #E0E0E0",
+          background: iWon ? "#FFF9DB" : "rgba(37,21,69,0.6)",
+          border: iWon ? "2px solid #FFD43B" : "2px solid rgba(151,117,250,0.2)",
           boxShadow: iWon ? "0 8px 24px rgba(255,212,59,0.2)" : cardStyle.boxShadow,
         }}
       >
@@ -101,11 +101,11 @@ export function Ended({
         >
           🏆
         </div>
-        <h2 className="relative text-3xl font-black mb-1" style={{ color: "#2D3436" }}>
+        <h2 className="relative text-3xl font-black mb-1" style={{ color: "#e2e8f0" }}>
           จบรอบที่ {room.round}
         </h2>
         {winner && (
-          <p className="relative text-base font-bold" style={{ color: "#636E72" }}>
+          <p className="relative text-base font-bold" style={{ color: "#a89cc8" }}>
             ผู้นำ:{" "}
             <span
               className="font-black text-lg"
@@ -134,19 +134,19 @@ export function Ended({
 
       {/* Scoreboard */}
       <div style={cardStyle} className="p-5">
-        <div className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: "#636E72" }}>
+        <div className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: "#a89cc8" }}>
           คะแนนรวม
         </div>
         <div className="space-y-3">
           {ranked.map((p, i) => {
-            const rankColor = i === 0 ? "#FFD43B" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#E0E0E0";
+            const rankColor = i === 0 ? "#FFD43B" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "rgba(151,117,250,0.15)";
             return (
               <div
                 key={p.id}
                 className="flex items-center gap-4 rounded-[16px] px-4 py-3 animate-slide-in-right"
                 style={{
                   background: p.id === playerId ? "#FFF3E0" : "#F8F9FA",
-                  border: p.id === playerId ? "2px solid #FF8C42" : "2px solid #E0E0E0",
+                  border: p.id === playerId ? "2px solid #FF8C42" : "2px solid rgba(151,117,250,0.2)",
                   animationDelay: `${i * 80}ms`,
                 }}
               >
@@ -154,7 +154,7 @@ export function Ended({
                   className="w-10 h-10 rounded-full flex items-center justify-center font-black text-lg flex-shrink-0"
                   style={{ 
                     backgroundColor: rankColor, 
-                    color: i < 3 ? "#FFFFFF" : "#636E72",
+                    color: i < 3 ? "rgba(37,21,69,0.6)" : "#a89cc8",
                     textShadow: i < 3 ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
                   }}
@@ -163,7 +163,7 @@ export function Ended({
                 </span>
                 <span
                   className="flex-1 text-lg font-black truncate"
-                  style={{ color: "#2D3436" }}
+                  style={{ color: "#e2e8f0" }}
                 >
                   {p.name}
                   {p.id === playerId && (
@@ -174,7 +174,7 @@ export function Ended({
                   className="font-black text-2xl animate-count-up px-4 py-1 rounded-xl"
                   style={{
                     backgroundColor: rankColor,
-                    color: i < 3 ? "#FFFFFF" : "#636E72",
+                    color: i < 3 ? "rgba(37,21,69,0.6)" : "#a89cc8",
                     textShadow: i < 3 ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                     animationDelay: `${i * 100 + 200}ms`,
@@ -191,7 +191,7 @@ export function Ended({
       {/* Round finishers */}
       {room.finishers.length > 0 && (
         <div style={cardStyle} className="p-5">
-          <div className="text-sm font-bold uppercase tracking-wider mb-3" style={{ color: "#636E72" }}>
+          <div className="text-sm font-bold uppercase tracking-wider mb-3" style={{ color: "#a89cc8" }}>
             ลำดับทายถูกรอบนี้
           </div>
           <div className="space-y-3">
@@ -207,7 +207,7 @@ export function Ended({
                     border: "2px solid #51CF66",
                   }}
                 >
-                  <span className="text-lg font-black" style={{ color: "#2D3436" }}>
+                  <span className="text-lg font-black" style={{ color: "#e2e8f0" }}>
                     {MEDAL[i] ?? `${i + 1}.`} {p?.name}
                     {fid === playerId && (
                       <span className="ml-2 text-sm font-bold" style={{ color: "#51CF66" }}>(คุณ)</span>
@@ -215,7 +215,7 @@ export function Ended({
                   </span>
                   <span
                     className="font-black text-xl px-3 py-1 rounded-lg"
-                    style={{ backgroundColor: "#51CF66", color: "#FFFFFF", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
+                    style={{ backgroundColor: "#51CF66", color: "rgba(37,21,69,0.6)", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
                   >
                     +{pts}
                   </span>
@@ -228,7 +228,7 @@ export function Ended({
 
       {/* Answers reveal */}
       <div style={cardStyle} className="p-5">
-        <div className="text-sm font-bold uppercase tracking-wider mb-3" style={{ color: "#636E72" }}>
+        <div className="text-sm font-bold uppercase tracking-wider mb-3" style={{ color: "#a89cc8" }}>
           เฉลยคำตอบ
         </div>
         <div className="space-y-3">
@@ -243,16 +243,16 @@ export function Ended({
                 className="flex items-center gap-4 rounded-[16px] px-4 py-3 animate-fade-in"
                 style={{
                   background: "#F8F9FA",
-                  border: "2px solid #E0E0E0",
+                  border: "2px solid rgba(151,117,250,0.2)",
                   animationDelay: `${i * 60}ms`,
                 }}
               >
                 {imgUrl && (
                   <img src={imgUrl} alt={ans ?? ""} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 shadow-sm"
-                    style={{ border: "2px solid #E0E0E0" }}
+                    style={{ border: "2px solid rgba(151,117,250,0.2)" }}
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                 )}
-                <span className="text-lg font-bold flex-1" style={{ color: "#636E72" }}>{p.name}</span>
+                <span className="text-lg font-bold flex-1" style={{ color: "#a89cc8" }}>{p.name}</span>
                 <span
                   className="text-xl font-black"
                   style={{ color: "#4DACF7" }}

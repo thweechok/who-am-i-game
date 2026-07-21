@@ -101,8 +101,8 @@ const DIFFICULTY_OPTIONS: { value: Difficulty; label: string; desc: string; colo
 ];
 
 const cartoonCard = {
-  backgroundColor: "#FFFFFF",
-  border: "1px solid #E0E0E0",
+  backgroundColor: "rgba(37,21,69,0.6)",
+  border: "1px solid rgba(151,117,250,0.15)",
   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
   borderRadius: "16px",
 } as const;
@@ -174,13 +174,13 @@ export function Setup({
       {/* ── Progress & Player List ── */}
       <div className="p-5 animate-stagger-1" style={cartoonCard}>
         <div className="flex justify-between items-center mb-3">
-          <span className="text-lg font-bold" style={{ color: "#2D3436" }}>🎮 ความพร้อมของผู้เล่น</span>
+          <span className="text-lg font-bold" style={{ color: "#e2e8f0" }}>🎮 ความพร้อมของผู้เล่น</span>
           <span className="text-sm font-black" style={{ color: "#FF8C42" }}>{readyCount}/{activePlayers.length} คน</span>
         </div>
         
         <div className="h-4 rounded-full overflow-hidden mb-4" style={{ backgroundColor: "#F1F2F6", border: "1px solid #DFE6E9" }}>
-          <div className={`h-full rounded-full transition-all duration-500 \${progressPct === 100 ? 'progress-shimmer-full' : 'progress-shimmer'}`}
-            style={{ width: `\${progressPct}%`, background: progressPct === 0 ? "transparent" : undefined }} />
+          <div className={`h-full rounded-full transition-all duration-500 ${progressPct === 100 ? 'progress-shimmer-full' : 'progress-shimmer'}`}
+            style={{ width: `${progressPct}%`, background: progressPct === 0 ? "transparent" : undefined }} />
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -188,8 +188,8 @@ export function Setup({
             const isReady = p.id === playerId ? room.myAnswer !== null : !!room.answers[p.id];
             return (
               <div key={p.id} className="p-2 rounded-xl text-center flex flex-col justify-center shadow-sm" 
-                style={{ backgroundColor: "#FFFFFF", border: isReady ? "2px solid #51CF66" : "1px solid #DFE6E9" }}>
-                <span className="text-sm font-bold block truncate" style={{ color: "#2D3436" }}>{p.name}</span>
+                style={{ backgroundColor: "rgba(37,21,69,0.6)", border: isReady ? "2px solid #51CF66" : "1px solid #DFE6E9" }}>
+                <span className="text-sm font-bold block truncate" style={{ color: "#e2e8f0" }}>{p.name}</span>
                 <span className="text-[10px] font-bold mt-1" style={{ color: isReady ? "#51CF66" : "#B2BEC3" }}>
                   {isReady ? "✅ พร้อมแล้ว" : "รอคำตอบ..."}
                 </span>
@@ -203,29 +203,29 @@ export function Setup({
       <div className="p-5 space-y-5 animate-stagger-2" style={cartoonCard}>
         <div className="flex items-center gap-2 mb-1 border-b pb-3 border-gray-100">
           <span className="text-2xl">✨</span>
-          <span className="text-lg font-black" style={{ color: "#2D3436" }}>
+          <span className="text-lg font-black" style={{ color: "#e2e8f0" }}>
             สุ่มหัวข้อด้วย AI
           </span>
-          {!amHost && <span className="ml-auto text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: "#F1F2F6", color: "#636E72" }}>👁️ ดูเท่านั้น</span>}
+          {!amHost && <span className="ml-auto text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: "#F1F2F6", color: "#a89cc8" }}>👁️ ดูเท่านั้น</span>}
         </div>
 
         {amHost ? (
           <>
             {/* Group filter */}
             <div>
-              <p className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: "#2D3436" }}>📂 หมวดหมู่</p>
+              <p className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: "#e2e8f0" }}>📂 หมวดหมู่</p>
               <div className="flex flex-wrap gap-2">
                 {GROUPS.map(g => (
                   <button key={g} onClick={() => setActiveGroup(g)}
                     className="px-4 py-2 text-sm font-bold transition-all rounded-full cartoon-press"
                     style={activeGroup === g ? {
                       backgroundColor: "#4DACF7",
-                      color: "#FFFFFF",
+                      color: "rgba(37,21,69,0.6)",
                       boxShadow: "0 4px 0 #2A8CD8",
                       border: "none",
                     } : {
                       backgroundColor: "#F8F9FA",
-                      color: "#636E72",
+                      color: "#a89cc8",
                       border: "1px solid #DFE6E9",
                     }}>
                     {g}
@@ -236,7 +236,7 @@ export function Setup({
 
             {/* Topic grid */}
             <div>
-              <p className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: "#2D3436" }}>📌 เลือกหัวข้อ</p>
+              <p className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: "#e2e8f0" }}>📌 เลือกหัวข้อ</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {filteredTopics.map((topic) => {
                   const isActive = !useCustom && selectedTopic === topic.value;
@@ -249,9 +249,9 @@ export function Setup({
                         border: "2px solid #FF8C42",
                         color: "#FF8C42",
                       } : {
-                        backgroundColor: "#FFFFFF",
-                        border: "1px solid #E0E0E0",
-                        color: "#636E72",
+                        backgroundColor: "rgba(37,21,69,0.6)",
+                        border: "1px solid rgba(151,117,250,0.15)",
+                        color: "#a89cc8",
                       }}>
                       <span className="text-3xl drop-shadow-sm">{topic.emoji}</span>
                       <span className="text-xs font-bold leading-tight">
@@ -269,7 +269,7 @@ export function Setup({
                   } : {
                     backgroundColor: "#FAFAFA",
                     border: "2px dashed #DFE6E9",
-                    color: "#636E72",
+                    color: "#a89cc8",
                   }}>
                   <span className="text-3xl drop-shadow-sm">✏️</span>
                   <span className="text-xs font-bold">กำหนดเอง</span>
@@ -279,25 +279,25 @@ export function Setup({
                 <input value={customTopic} onChange={e => setCustomTopic(e.target.value)}
                   placeholder="เช่น นักร้องไทยยุค 90..." autoFocus maxLength={80}
                   className="mt-3 w-full px-4 py-3 text-sm font-semibold rounded-xl outline-none transition-all focus:ring-2 focus:ring-orange-300"
-                  style={{ backgroundColor: "#F8F9FA", border: "2px solid #FF8C42", color: "#2D3436" }} />
+                  style={{ backgroundColor: "#F8F9FA", border: "2px solid #FF8C42", color: "#e2e8f0" }} />
               )}
             </div>
 
             {/* Difficulty */}
             <div>
-              <p className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: "#2D3436" }}>🔥 ระดับความยาก</p>
+              <p className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: "#e2e8f0" }}>🔥 ระดับความยาก</p>
               <div className="grid grid-cols-3 gap-3">
                 {DIFFICULTY_OPTIONS.map(opt => (
                   <button key={opt.value} onClick={() => setDifficulty(opt.value)}
                     className="py-3 px-2 text-sm font-bold text-center transition-all rounded-full cartoon-press"
                     style={difficulty === opt.value ? {
                       backgroundColor: opt.color,
-                      color: "#FFFFFF",
-                      boxShadow: `0 4px 0 \${opt.shadow}`,
+                      color: "rgba(37,21,69,0.6)",
+                      boxShadow: `0 4px 0 ${opt.shadow}`,
                       border: "none",
                     } : {
-                      backgroundColor: "#FFFFFF",
-                      color: "#636E72",
+                      backgroundColor: "rgba(37,21,69,0.6)",
+                      color: "#a89cc8",
                       border: "2px solid #DFE6E9",
                     }}>
                     {opt.label}
@@ -317,7 +317,7 @@ export function Setup({
               className="w-full py-4 text-lg font-black transition-all disabled:opacity-50 disabled:cursor-not-allowed ai-btn cartoon-press rounded-full"
               style={{ 
                 backgroundColor: "#FF8C42", 
-                color: "#FFFFFF", 
+                color: "rgba(37,21,69,0.6)", 
                 boxShadow: "0 6px 0 #D96A25", 
                 border: "none" 
               }}>
@@ -328,7 +328,7 @@ export function Setup({
           /* Non-host: read-only */
           <div className="text-center py-8 space-y-4">
             <p className="text-lg font-black" style={{ color: "#FF8C42" }}>⏳ รอ Host เลือกหัวข้อ...</p>
-            <p className="text-sm font-bold" style={{ color: "#636E72" }}>เฉพาะเจ้าของห้องเท่านั้นที่สุ่มคำตอบได้</p>
+            <p className="text-sm font-bold" style={{ color: "#a89cc8" }}>เฉพาะเจ้าของห้องเท่านั้นที่สุ่มคำตอบได้</p>
             {room.topic && (
               <div className="mt-4 inline-block px-6 py-4 rounded-xl shadow-sm"
                 style={{ backgroundColor: "#FFF4ED", border: "2px solid #FFCDAD" }}>
@@ -360,7 +360,7 @@ export function Setup({
             className="w-full py-4 text-xl font-black transition-all disabled:opacity-50 disabled:cursor-not-allowed start-btn cartoon-press rounded-full"
             style={{ 
               backgroundColor: "#51CF66", 
-              color: "#FFFFFF", 
+              color: "rgba(37,21,69,0.6)", 
               boxShadow: "0 6px 0 #3BAA4C", 
               border: "none" 
             }}>
@@ -375,7 +375,7 @@ export function Setup({
           ) : (
             <>
               <p className="text-lg font-black" style={{ color: "#FF8C42" }}>⏳ รอ Host สุ่มคำตอบ... ({readyCount}/{activePlayers.length} คน)</p>
-              <p className="text-sm font-bold mt-2" style={{ color: "#636E72" }}>เฉพาะเจ้าของห้องเท่านั้นที่สุ่มคำตอบได้</p>
+              <p className="text-sm font-bold mt-2" style={{ color: "#a89cc8" }}>เฉพาะเจ้าของห้องเท่านั้นที่สุ่มคำตอบได้</p>
             </>
           )}
         </div>

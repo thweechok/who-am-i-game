@@ -108,7 +108,7 @@ function RoomBody({
       {reconnecting && (
         <div
           className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 animate-slide-up"
-          style={{ background: "#FFF3CD", border: "2px solid #FFD43B", color: "#856404" }}
+          style={{ background: "rgba(255,212,59,0.15)", border: "2px solid rgba(255,212,59,0.4)", color: "#FFD43B" }}
         >
           <span className="w-2 h-2 rounded-full animate-blink" style={{ background: "#FFD43B" }} />
           กำลังเชื่อมต่อใหม่...
@@ -119,7 +119,7 @@ function RoomBody({
       <div className="w-full max-w-7xl mx-auto mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black gradient-text">WHO AM I? 🎭</h1>
-          <p className="text-xs mt-0.5" style={{ color: "#636E72" }}>
+          <p className="text-xs mt-0.5" style={{ color: "#a89cc8" }}>
             ห้อง{" "}
             <span className="font-mono font-bold" style={{ color: "#FF8C42" }}>{room.code}</span>
             {" "}·{" "}{playerName}
@@ -132,7 +132,7 @@ function RoomBody({
                     ? "rgba(81,207,102,0.15)"
                     : "rgba(255,140,66,0.15)",
                 color:
-                  room.status === "playing" ? "#2B8A3E" : "#E8590C",
+                  room.status === "playing" ? "#51CF66" : "#FF8C42",
               }}
             >
               {statusLabel[room.status] ?? room.status}
@@ -142,9 +142,9 @@ function RoomBody({
         <button
           onClick={() => window.location.assign("/")}
           className="text-xs font-bold px-4 py-2 rounded-full transition-all"
-          style={{ background: "#F0F0F0", color: "#636E72", border: "1px solid #E0E0E0" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "#E0E0E0"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "#F0F0F0"; }}
+          style={{ background: "rgba(151,117,250,0.15)", color: "#c4b5fd", border: "1px solid rgba(151,117,250,0.25)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(151,117,250,0.25)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(151,117,250,0.15)"; }}
         >
           ออก
         </button>
