@@ -13,9 +13,9 @@ const lobbyStyles = `
     0% { opacity: 0; transform: scale(0.9); }
     100% { opacity: 1; transform: scale(1); }
   }
-  @keyframes goldenShimmer {
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
+  @keyframes bounceCute {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
   }
   .animate-stagger-1 { animation: slideUpFade 0.5s ease-out 0.1s both; }
   .animate-stagger-2 { animation: slideUpFade 0.5s ease-out 0.2s both; }
@@ -25,45 +25,26 @@ const lobbyStyles = `
     animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   }
   
-  .room-code-shimmer {
-    background: linear-gradient(90deg, #fde68a 20%, #ffffff 50%, #fde68a 80%);
-    background-size: 200% auto;
-    color: transparent;
-    -webkit-text-fill-color: transparent;
-    -webkit-background-clip: text;
-    background-clip: text;
-    animation: goldenShimmer 3s linear infinite;
+  .waiting-bounce {
+    animation: bounceCute 1s ease-in-out infinite;
   }
 `;
 
-/* ── RPG style tokens ─────────────────────────────────────── */
-const rpgCard = {
-  background: "linear-gradient(180deg, #1c0e04 0%, #0d0700 60%, #1c0e04 100%)",
-  border: "2px solid #9a6e10",
-  boxShadow:
-    "inset 0 1px 0 rgba(255,180,50,0.12), inset 0 -1px 0 rgba(0,0,0,0.4), 0 4px 20px rgba(0,0,0,0.6), 0 0 0 1px rgba(154,110,16,0.25)",
-  borderRadius: "6px",
-} as const;
+const cardStyle = {
+  background: "#FFFFFF",
+  border: "1px solid #E0E0E0",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+  borderRadius: "16px",
+};
 
-const rpgBtnPrimary = {
-  border: "2px solid #d4a827",
-  outline: "1px solid #a07820",
-  outlineOffset: "-5px",
-  borderRadius: "4px",
-  background: "linear-gradient(180deg, #3a2200 0%, #1e1000 40%, #3a2200 100%)",
-  boxShadow:
-    "inset 0 2px 0 rgba(255,210,80,0.25), inset 0 -2px 0 rgba(0,0,0,0.5), 0 6px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(212,168,39,0.4), 0 0 20px rgba(212,168,39,0.15)",
-  color: "#fde68a",
-  textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(255,200,80,0.4)",
-  letterSpacing: "0.05em",
-} as const;
-
-const rpgBtnGhost = {
-  border: "1px solid #5a3a08",
-  borderRadius: "4px",
-  background: "rgba(0,0,0,0.3)",
-  color: "#9a6e10",
-} as const;
+const colors = {
+  primary: "#FF8C42",
+  secondary: "#4DACF7",
+  success: "#51CF66",
+  danger: "#FF6B6B",
+  text: "#2D3436",
+  subtitle: "#636E72",
+};
 
 function PlayerRow({
   player,
@@ -75,36 +56,47 @@ function PlayerRow({
   isHost: boolean;
 }) {
   const initial = player.name.charAt(0).toUpperCase();
+  
+  const avatarColors = [
+    "#FF8C42", "#4DACF7", "#51CF66", "#FF6B6B", "#A55EEA", "#FD9644"
+  ];
+  const charCode = initial.charCodeAt(0) || 0;
+  const avatarBg = avatarColors[charCode % avatarColors.length];
+
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded transition-all player-join"
+    <div className="flex items-center gap-3 px-4 py-3 player-join mb-2"
       style={{
-        background: isYou ? "rgba(212,168,39,0.06)" : "rgba(0,0,0,0.2)",
-        border: isYou ? "1px solid rgba(212,168,39,0.25)" : "1px solid rgba(154,110,16,0.15)",
-        borderRadius: "4px",
+        background: "#FFFFFF",
+        border: isYou ? `2px solid ${colors.primary}` : "1px solid #E0E0E0",
+        borderRadius: "12px",
+        boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
       }}>
       {/* Avatar */}
-      <div className="w-9 h-9 rounded flex items-center justify-center text-sm font-black flex-shrink-0 relative"
-        style={{
-          background: isYou
-            ? "linear-gradient(135deg,#d4a827,#8b6010)"
-            : "rgba(154,110,16,0.15)",
-          border: isYou ? "1px solid #d4a827" : "1px solid #3a2208",
-          color: isYou ? "#0d0700" : "#9a6e10",
-        }}>
+      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black flex-shrink-0 relative text-lg"
+        style={{ background: avatarBg }}>
         {initial}
-        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
-          style={{ background: "#34d399", boxShadow: "0 0 5px #34d399" }} />
+        <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
+          style={{ background: colors.success }} />
       </div>
 
       {/* Name + badges */}
-      <div className="flex-1 min-w-0">
-        <span className="text-sm font-bold truncate block" style={{ color: isYou ? "#fde68a" : "#c8911a" }}>
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        <span className="text-base font-bold truncate" style={{ color: colors.text }}>
           {player.name}
         </span>
-        <div className="flex gap-1.5 mt-0.5 flex-wrap">
-          {isYou && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: "rgba(212,168,39,0.15)", color: "#d4a827", border: "1px solid rgba(212,168,39,0.3)" }}>คุณ</span>}
-          {isHost && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.25)" }}>👑 Host</span>}
-          {player.isSpectator && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: "rgba(148,163,184,0.1)", color: "#64748b", border: "1px solid rgba(148,163,184,0.2)" }}>👁️ ดู</span>}
+        <div className="flex gap-1.5 flex-wrap">
+          {isYou && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" 
+              style={{ background: `\${colors.primary}22`, color: colors.primary }}>
+              (คุณ)
+            </span>
+          )}
+          {isHost && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" 
+              style={{ background: "#FFF3CD", color: "#856404" }}>
+              👑 Host
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -126,6 +118,7 @@ export function Lobby({
   const [copied, setCopied] = useState(false);
 
   const activePlayers = room.players.filter(p => !p.isSpectator);
+  const spectatorPlayers = room.players.filter(p => p.isSpectator);
   const canStart = activePlayers.length >= 2;
 
   async function handleStart() {
@@ -142,174 +135,179 @@ export function Lobby({
   }
 
   function copyInvite() {
-    const url = `${window.location.origin}/room/${room.code}`;
+    const url = `\${window.location.origin}/room/\${room.code}`;
     navigator.clipboard?.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   }
 
-  const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/room/${room.code}` : "";
-
   return (
-    <div className="w-full max-w-md animate-slide-up space-y-3">
+    <div className="w-full max-w-5xl mx-auto space-y-6">
       <style>{lobbyStyles}</style>
-
-      {/* ── Room Code Card ── */}
-      <div className="p-5 animate-stagger-1" style={rpgCard}>
-        <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: "#9a6e10" }}>
-          ⚔️ รหัสห้อง
-        </p>
-        <div className="flex items-center gap-3">
-          <div className="flex-1 font-mono text-4xl font-black tracking-[0.4em] room-code-shimmer"
-            style={{ textShadow: "0 0 20px rgba(212,168,39,0.4)" }}>
-            {room.code}
+      
+      {/* Cartoon Banner for Room Code */}
+      <div className="flex flex-col items-center justify-center mb-8 animate-stagger-1">
+        <div className="inline-block relative">
+          <div className="absolute inset-0 bg-black rounded-[20px] translate-y-2 opacity-10"></div>
+          <div className="relative px-8 py-4 rounded-[20px] flex flex-col items-center justify-center text-center" 
+            style={{ background: colors.primary, boxShadow: "inset 0 -4px 0 rgba(0,0,0,0.15)" }}>
+            <span className="text-white/90 text-sm font-bold uppercase tracking-wider mb-1">รหัสห้องของคุณ</span>
+            <div className="text-white text-5xl font-black tracking-widest" style={{ textShadow: "0 4px 0 rgba(0,0,0,0.15)" }}>
+              {room.code}
+            </div>
           </div>
-          <button onClick={copyInvite} id="btn-copy-invite"
-            className="px-4 py-2 text-sm font-bold transition-all hover:brightness-125"
-            style={copied ? {
-              ...rpgBtnGhost,
-              color: "#34d399",
-              border: "1px solid rgba(52,211,153,0.4)",
-              background: "rgba(52,211,153,0.05)",
-              borderRadius: "4px",
-            } : rpgBtnGhost}>
-            {copied ? "✓ คัดลอก!" : "📋 คัดลอกลิงก์"}
-          </button>
         </div>
-        {/* Invite URL hint */}
-        <p className="text-[10px] mt-2 truncate" style={{ color: "#5a3a08" }}>
-          {inviteUrl || `sanukhub.vercel.app/room/${room.code}`}
-        </p>
-
-        {/* Step hint */}
-        <div className="mt-3 pt-3 flex items-center gap-2" style={{ borderTop: "1px solid rgba(154,110,16,0.2)" }}>
-          <span className="text-[10px] font-bold" style={{ color: "#c8911a" }}>
-            📌 แชร์รหัสหรือลิงก์ให้เพื่อนเข้าห้อง
-          </span>
-        </div>
+        
+        <button onClick={copyInvite} id="btn-copy-invite"
+          className="mt-4 px-6 py-2.5 rounded-full font-bold text-white transition-transform active:scale-95 flex items-center gap-2 shadow-sm"
+          style={{ 
+            background: copied ? colors.success : colors.secondary,
+            boxShadow: `0 4px 0 \${copied ? "#38B000" : "#1971C2"}`,
+            marginBottom: "4px"
+          }}>
+          {copied ? "✓ คัดลอกสำเร็จ!" : "🔗 คัดลอกลิงก์เชิญเพื่อน"}
+        </button>
       </div>
 
-      {/* ── Players Card ── */}
-      <div className="p-4 animate-stagger-2" style={rpgCard}>
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#9a6e10" }}>
-            ผู้เล่น
-          </span>
-          <span className="text-xs font-black font-mono px-2 py-0.5 rounded"
-            style={{ background: "rgba(0,0,0,0.3)", color: "#c8911a", border: "1px solid #5a3a08" }}>
-            {activePlayers.length}/6
-          </span>
-        </div>
-
-        <div className="space-y-2">
-          {room.players.map(p => (
-            <PlayerRow
-              key={p.id}
-              player={p}
-              isYou={p.id === playerId}
-              isHost={p.id === room.hostId}
-            />
-          ))}
-
-          {/* Empty slots */}
-          {activePlayers.length < 2 && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded"
-              style={{ border: "1px dashed rgba(154,110,16,0.2)", borderRadius: "4px" }}>
-              <span className="text-xs" style={{ color: "#4a2e08" }}>
-                ⏳ รอผู้เล่นอื่นเข้าร่วม... (ต้องมีอย่างน้อย 2 คน)
+      <div className="grid md:grid-cols-[1fr_1fr] gap-6">
+        
+        {/* ── Left Column - Players ── */}
+        <div className="flex flex-col gap-6">
+          <div className="p-5 animate-stagger-2" style={cardStyle}>
+            <div className="flex items-center justify-between mb-4 pb-2" style={{ borderBottom: "2px dashed #E0E0E0" }}>
+              <h2 className="text-xl font-black" style={{ color: colors.text }}>ผู้เล่น</h2>
+              <span className="text-sm font-bold px-3 py-1 rounded-full" 
+                style={{ background: "#F1F3F5", color: colors.subtitle }}>
+                {activePlayers.length}/6
               </span>
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* ── Settings (Host only) ── */}
-      {amHost && (
-        <div className="p-4 animate-stagger-3" style={rpgCard}>
-          <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: "#9a6e10" }}>
-            ⚙️ จำกัดคำถามต่อตา
-          </p>
-          <div className="grid grid-cols-4 gap-2">
-            {[3, 5, 8, 0].map((n) => {
-              const label = n === 0 ? "∞" : `${n}`;
-              const active = (room.maxQuestionsPerTurn ?? 5) === n;
-              return (
-                <button key={n} id={`btn-max-q-${n}`}
-                  onClick={async () => {
-                    try {
-                      await sendAction(room.code, playerId, { type: "setMaxQuestions", value: n });
-                      onRefresh();
-                    } catch { /* ignore */ }
-                  }}
-                  className="py-2.5 text-sm font-black transition-all hover:brightness-125"
-                  style={active ? rpgBtnPrimary : rpgBtnGhost}>
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-[10px] mt-2" style={{ color: "#5a3a08" }}>
-            {(room.maxQuestionsPerTurn ?? 5) === 0
-              ? "ไม่จำกัดจำนวนคำถาม"
-              : `ถามได้สูงสุด ${room.maxQuestionsPerTurn ?? 5} ข้อ แล้วต้องทายหรือผ่าน`}
-          </p>
-        </div>
-      )}
+            <div className="space-y-1 min-h-[200px]">
+              {activePlayers.map(p => (
+                <PlayerRow
+                  key={p.id}
+                  player={p}
+                  isYou={p.id === playerId}
+                  isHost={p.id === room.hostId}
+                />
+              ))}
 
-      {/* Error */}
-      {error && (
-        <div className="px-4 py-3 text-sm font-semibold rounded"
-          style={{ background: "rgba(251,113,133,0.1)", color: "#fb7185", border: "1px solid rgba(251,113,133,0.25)" }}>
-          ⚠️ {error}
-        </div>
-      )}
-
-      {/* ── Start / Wait ── */}
-      {amHost ? (
-        <div className="p-4 space-y-3 animate-stagger-3" style={rpgCard}>
-          {/* Progress indicator */}
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="w-2 h-2 rounded-full"
-                  style={{ background: i < activePlayers.length ? "#d4a827" : "rgba(154,110,16,0.2)", boxShadow: i < activePlayers.length ? "0 0 4px #d4a827" : "none" }} />
+              {/* Empty slots */}
+              {Array.from({ length: Math.max(0, 6 - activePlayers.length) }).map((_, i) => (
+                <div key={`empty-\${i}`} className="flex items-center gap-3 px-4 py-3 mb-2 rounded-[12px]"
+                  style={{ border: "2px dashed #E0E0E0", background: "#F8F9FA" }}>
+                  <div className="w-10 h-10 rounded-full bg-gray-200" />
+                  <span className="text-sm font-bold text-gray-400">รอผู้เล่น...</span>
+                </div>
               ))}
             </div>
-            <span className="text-xs" style={{ color: "#9a6e10" }}>
-              {activePlayers.length} / 6 คน
-            </span>
           </div>
-          <button
-            id="btn-start-game"
-            onClick={handleStart}
-            disabled={loading || !canStart}
-            className="w-full py-4 text-base font-black tracking-wider transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={rpgBtnPrimary}>
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 rounded-full border-2 border-amber-900 border-t-amber-300 animate-spin" />
-                กำลังเริ่ม...
-              </span>
-            ) : !canStart ? (
-              `⏳ รออีก ${2 - activePlayers.length} คน`
-            ) : (
-              "⚔️ เริ่มเกม!"
-            )}
-          </button>
-          {canStart && (
-            <p className="text-[10px] text-center" style={{ color: "#5a3a08" }}>
-              กด "เริ่มเกม" แล้วเลือกหัวข้อในขั้นตอนถัดไป
-            </p>
+
+          {/* Spectators */}
+          {spectatorPlayers.length > 0 && (
+            <div className="p-5 animate-stagger-2" style={cardStyle}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">👁️</span>
+                <h3 className="font-bold" style={{ color: colors.subtitle }}>คนดู ({spectatorPlayers.length})</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {spectatorPlayers.map(p => (
+                  <div key={p.id} className="flex items-center gap-2 px-3 py-2 rounded-[8px]" style={{ background: "#F8F9FA", border: "1px solid #E0E0E0" }}>
+                    <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs text-white font-bold">
+                      {p.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-xs font-bold text-gray-600 truncate">{p.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
-      ) : (
-        <div className="p-4 text-center animate-stagger-3" style={rpgCard}>
-          <div className="flex items-center justify-center gap-2">
-            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#d4a827" }} />
-            <span className="text-sm font-bold" style={{ color: "#c8911a" }}>รอ Host เริ่มเกม...</span>
-          </div>
+
+        {/* ── Right Column - Settings (Host only) / Wait (Guest) ── */}
+        <div className="flex flex-col gap-6">
+          {amHost ? (
+            <>
+              <div className="p-5 animate-stagger-3" style={cardStyle}>
+                <h2 className="text-xl font-black mb-4 pb-2" style={{ color: colors.text, borderBottom: "2px dashed #E0E0E0" }}>
+                  ⚙️ ตั้งค่าห้อง
+                </h2>
+                
+                <div className="mb-2">
+                  <p className="font-bold mb-3" style={{ color: colors.subtitle }}>จำนวนคำถามสูงสุดต่อตา</p>
+                  <div className="grid grid-cols-4 gap-3">
+                    {[3, 5, 8, 0].map((n) => {
+                      const label = n === 0 ? "∞" : `\${n}`;
+                      const active = (room.maxQuestionsPerTurn ?? 5) === n;
+                      return (
+                        <button key={n} id={`btn-max-q-\${n}`}
+                          onClick={async () => {
+                            try {
+                              await sendAction(room.code, playerId, { type: "setMaxQuestions", value: n });
+                              onRefresh();
+                            } catch { /* ignore */ }
+                          }}
+                          className="py-3 rounded-[12px] text-lg font-black transition-all active:scale-95"
+                          style={{
+                            background: active ? colors.primary : "#F1F3F5",
+                            color: active ? "#FFFFFF" : colors.subtitle,
+                            boxShadow: active ? "0 4px 0 #D97A3B" : "0 4px 0 #DEE2E6",
+                            marginBottom: "4px"
+                          }}>
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="px-4 py-3 text-sm font-bold rounded-[12px]"
+                  style={{ background: "#FFE3E3", color: colors.danger, border: "2px solid #FFC9C9" }}>
+                  ⚠️ {error}
+                </div>
+              )}
+
+              <div className="p-5 animate-stagger-3 flex flex-col gap-4" style={cardStyle}>
+                <button
+                  id="btn-start-game"
+                  onClick={handleStart}
+                  disabled={loading || !canStart}
+                  className="w-full py-5 rounded-[16px] text-2xl font-black transition-transform active:scale-95 disabled:active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+                  style={{
+                    background: !canStart ? "#CED4DA" : `linear-gradient(180deg, #FFD166 0%, \${colors.primary} 100%)`,
+                    boxShadow: !canStart ? "0 6px 0 #ADB5BD" : "0 6px 0 #E85D04",
+                    marginBottom: "6px"
+                  }}>
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-6 h-6 rounded-full border-4 border-white/30 border-t-white animate-spin" />
+                      กำลังเริ่ม...
+                    </span>
+                  ) : !canStart ? (
+                    `รอผู้เล่นอีก \${2 - activePlayers.length} คน...`
+                  ) : (
+                    "เริ่มเกม! 🎮"
+                  )}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="p-8 h-full min-h-[300px] flex flex-col items-center justify-center animate-stagger-3 text-center" style={cardStyle}>
+              <div className="text-6xl mb-4 waiting-bounce">🕹️</div>
+              <h2 className="text-2xl font-black mb-2" style={{ color: colors.primary }}>
+                รอ Host เริ่มเกม...
+              </h2>
+              <p className="font-bold" style={{ color: colors.subtitle }}>
+                เตรียมตัวให้พร้อม!
+              </p>
+            </div>
+          )}
         </div>
-      )}
+
+      </div>
     </div>
   );
 }
+

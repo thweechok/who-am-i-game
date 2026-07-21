@@ -9,40 +9,46 @@ const setupStyles = `
     0% { opacity: 0; transform: translateY(15px); }
     100% { opacity: 1; transform: translateY(0); }
   }
-  @keyframes pulseGlow {
-    0%, 100% { box-shadow: 0 0 15px rgba(212,168,39,0.4), inset 0 2px 0 rgba(255,210,80,0.25), 0 6px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(212,168,39,0.4); }
-    50% { box-shadow: 0 0 25px rgba(255,200,80,0.7), inset 0 2px 0 rgba(255,210,80,0.5), 0 6px 24px rgba(0,0,0,0.8), 0 0 0 1px rgba(212,168,39,0.6); }
+  @keyframes pulseCartoon {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
   }
-  @keyframes shimmer {
+  @keyframes shimmerOrange {
     0% { background-position: -200% center; }
     100% { background-position: 200% center; }
   }
-  .animate-stagger-1 { animation: slideUpFade 0.5s ease-out 0.1s both; }
-  .animate-stagger-2 { animation: slideUpFade 0.5s ease-out 0.2s both; }
-  .animate-stagger-3 { animation: slideUpFade 0.5s ease-out 0.3s both; }
+  .animate-stagger-1 { animation: slideUpFade 0.4s ease-out 0.1s both; }
+  .animate-stagger-2 { animation: slideUpFade 0.4s ease-out 0.2s both; }
+  .animate-stagger-3 { animation: slideUpFade 0.4s ease-out 0.3s both; }
   
+  .topic-btn {
+    transition: all 0.2s ease;
+  }
   .topic-btn:hover {
     transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(212,168,39,0.3);
-    border-color: #d4a827 !important;
+    border-color: #FF8C42 !important;
+    box-shadow: 0 4px 12px rgba(255,140,66,0.15) !important;
     z-index: 10;
   }
   .ai-btn {
-    animation: pulseGlow 2.5s infinite;
+    animation: pulseCartoon 2.5s infinite;
   }
   .start-btn {
-    animation: pulseGlow 1.5s infinite;
-    text-shadow: 0 0 10px rgba(255,200,80,0.8);
+    animation: pulseCartoon 1.5s infinite;
   }
   .progress-shimmer {
-    background: linear-gradient(90deg, #9a6e10 25%, #f5d680 50%, #9a6e10 75%);
+    background: linear-gradient(90deg, #FF8C42 25%, #FFA56B 50%, #FF8C42 75%);
     background-size: 200% auto;
-    animation: shimmer 2.5s linear infinite;
+    animation: shimmerOrange 2.5s linear infinite;
   }
   .progress-shimmer-full {
-    background: linear-gradient(90deg, #d4a827 25%, #fffbeb 50%, #d4a827 75%);
+    background: linear-gradient(90deg, #51CF66 25%, #7DE590 50%, #51CF66 75%);
     background-size: 200% auto;
-    animation: shimmer 2s linear infinite;
+    animation: shimmerOrange 2s linear infinite;
+  }
+  .cartoon-press:active:not(:disabled) {
+    transform: translateY(4px) !important;
+    box-shadow: 0 0 0 transparent !important;
   }
 `;
 
@@ -88,40 +94,17 @@ const TOPIC_PRESETS = [
 
 const GROUPS = ["กีฬา", "อาหาร", "สัตว์", "บันเทิง", "โลก", "บุคคล", "สิ่งของ"];
 
-const DIFFICULTY_OPTIONS: { value: Difficulty; label: string; desc: string }[] = [
-  { value: "easy",   label: "🟢 ง่าย",  desc: "ทุกคนรู้จัก"  },
-  { value: "medium", label: "🟡 กลาง", desc: "คิดนิดหน่อย" },
-  { value: "hard",   label: "🔴 ยาก",  desc: "ต้องรู้เยอะ"  },
+const DIFFICULTY_OPTIONS: { value: Difficulty; label: string; desc: string; color: string; shadow: string }[] = [
+  { value: "easy",   label: "🟢 ง่าย",  desc: "ทุกคนรู้จัก", color: "#51CF66", shadow: "#3BAA4C" },
+  { value: "medium", label: "🟡 กลาง", desc: "คิดนิดหน่อย", color: "#FF8C42", shadow: "#D96A25" },
+  { value: "hard",   label: "🔴 ยาก",  desc: "ต้องรู้เยอะ", color: "#FF5252", shadow: "#D32F2F" },
 ];
 
-/* RPG frame style helpers */
-const rpgCard = {
-  background: "linear-gradient(180deg, #1c0e04 0%, #0d0700 60%, #1c0e04 100%)",
-  border: "2px solid #9a6e10",
-  boxShadow: "inset 0 1px 0 rgba(255,180,50,0.12), inset 0 -1px 0 rgba(0,0,0,0.4), 0 4px 20px rgba(0,0,0,0.6), 0 0 0 1px rgba(154,110,16,0.25)",
-  borderRadius: "6px",
-} as const;
-
-const rpgBtn = {
-  border: "2px solid #c8911a",
-  outline: "1px solid #8b6010",
-  outlineOffset: "-4px",
-  borderRadius: "4px",
-  background: "linear-gradient(180deg, #2a1800 0%, #1a0e00 50%, #2a1800 100%)",
-  boxShadow: "inset 0 1px 0 rgba(255,200,80,0.2), inset 0 -1px 0 rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.6)",
-  color: "#f5d680",
-} as const;
-
-const rpgBtnPrimary = {
-  border: "2px solid #d4a827",
-  outline: "1px solid #a07820",
-  outlineOffset: "-5px",
-  borderRadius: "4px",
-  background: "linear-gradient(180deg, #3a2200 0%, #1e1000 40%, #3a2200 100%)",
-  boxShadow: "inset 0 2px 0 rgba(255,210,80,0.25), inset 0 -2px 0 rgba(0,0,0,0.5), 0 6px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(212,168,39,0.4), 0 0 20px rgba(212,168,39,0.15)",
-  color: "#fde68a",
-  textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(255,200,80,0.4)",
-  letterSpacing: "0.05em",
+const cartoonCard = {
+  backgroundColor: "#FFFFFF",
+  border: "1px solid #E0E0E0",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+  borderRadius: "16px",
 } as const;
 
 export function Setup({
@@ -185,51 +168,65 @@ export function Setup({
   const filteredTopics = TOPIC_PRESETS.filter(t => t.group === activeGroup);
 
   return (
-    <div className="w-full max-w-xl animate-slide-up space-y-3">
+    <div className="w-full max-w-3xl mx-auto animate-slide-up space-y-4">
       <style>{setupStyles}</style>
 
-      {/* ── Progress bar ── */}
-      <div className="p-4 animate-stagger-1" style={rpgCard}>
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-xs font-bold" style={{ color: "#c8911a" }}>⚔️ ความพร้อม</span>
-          <span className="text-xs font-black" style={{ color: "#f5d680" }}>{readyCount}/{activePlayers.length} คน</span>
+      {/* ── Progress & Player List ── */}
+      <div className="p-5 animate-stagger-1" style={cartoonCard}>
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-lg font-bold" style={{ color: "#2D3436" }}>🎮 ความพร้อมของผู้เล่น</span>
+          <span className="text-sm font-black" style={{ color: "#FF8C42" }}>{readyCount}/{activePlayers.length} คน</span>
         </div>
-        <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #5a3a08" }}>
-          <div className={`h-full rounded-full transition-all duration-500 ${progressPct === 100 ? 'progress-shimmer-full' : 'progress-shimmer'}`}
-            style={{ width: `${progressPct}%`, background: progressPct === 0 ? "transparent" : undefined }} />
+        
+        <div className="h-4 rounded-full overflow-hidden mb-4" style={{ backgroundColor: "#F1F2F6", border: "1px solid #DFE6E9" }}>
+          <div className={`h-full rounded-full transition-all duration-500 \${progressPct === 100 ? 'progress-shimmer-full' : 'progress-shimmer'}`}
+            style={{ width: `\${progressPct}%`, background: progressPct === 0 ? "transparent" : undefined }} />
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {activePlayers.map(p => {
+            const isReady = p.id === playerId ? room.myAnswer !== null : !!room.answers[p.id];
+            return (
+              <div key={p.id} className="p-2 rounded-xl text-center flex flex-col justify-center shadow-sm" 
+                style={{ backgroundColor: "#FFFFFF", border: isReady ? "2px solid #51CF66" : "1px solid #DFE6E9" }}>
+                <span className="text-sm font-bold block truncate" style={{ color: "#2D3436" }}>{p.name}</span>
+                <span className="text-[10px] font-bold mt-1" style={{ color: isReady ? "#51CF66" : "#B2BEC3" }}>
+                  {isReady ? "✅ พร้อมแล้ว" : "รอคำตอบ..."}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* ── AI Setup (Host only sees controls) ── */}
-      <div className="p-5 space-y-4 animate-stagger-2" style={rpgCard}>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-lg">✨</span>
-          <span className="text-sm font-black" style={{ color: "#f5d680", textShadow: "0 0 8px rgba(255,200,80,0.3)" }}>
+      <div className="p-5 space-y-5 animate-stagger-2" style={cartoonCard}>
+        <div className="flex items-center gap-2 mb-1 border-b pb-3 border-gray-100">
+          <span className="text-2xl">✨</span>
+          <span className="text-lg font-black" style={{ color: "#2D3436" }}>
             สุ่มหัวข้อด้วย AI
           </span>
-          {!amHost && <span className="ml-auto text-xs" style={{ color: "#9a6e10" }}>👁️ ดูเท่านั้น</span>}
+          {!amHost && <span className="ml-auto text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: "#F1F2F6", color: "#636E72" }}>👁️ ดูเท่านั้น</span>}
         </div>
 
         {amHost ? (
           <>
             {/* Group filter */}
             <div>
-              <p className="text-[10px] font-bold mb-2" style={{ color: "#9a6e10", letterSpacing: "0.08em" }}>หมวดหมู่</p>
-              <div className="flex flex-wrap gap-1.5">
+              <p className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: "#2D3436" }}>📂 หมวดหมู่</p>
+              <div className="flex flex-wrap gap-2">
                 {GROUPS.map(g => (
                   <button key={g} onClick={() => setActiveGroup(g)}
-                    className="px-3 py-1 text-xs font-bold transition-all"
+                    className="px-4 py-2 text-sm font-bold transition-all rounded-full cartoon-press"
                     style={activeGroup === g ? {
-                      ...rpgBtn,
-                      padding: "4px 12px",
-                      fontSize: "11px",
+                      backgroundColor: "#4DACF7",
+                      color: "#FFFFFF",
+                      boxShadow: "0 4px 0 #2A8CD8",
+                      border: "none",
                     } : {
-                      background: "rgba(0,0,0,0.3)",
-                      border: "1px solid #4a2e08",
-                      borderRadius: "4px",
-                      color: "#6b4a1a",
-                      padding: "4px 12px",
-                      fontSize: "11px",
+                      backgroundColor: "#F8F9FA",
+                      color: "#636E72",
+                      border: "1px solid #DFE6E9",
                     }}>
                     {g}
                   </button>
@@ -239,72 +236,71 @@ export function Setup({
 
             {/* Topic grid */}
             <div>
-              <p className="text-[10px] font-bold mb-2" style={{ color: "#9a6e10", letterSpacing: "0.08em" }}>เลือกหัวข้อ</p>
-              <div className="grid grid-cols-3 gap-2">
+              <p className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: "#2D3436" }}>📌 เลือกหัวข้อ</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {filteredTopics.map((topic) => {
                   const isActive = !useCustom && selectedTopic === topic.value;
                   return (
                     <button key={topic.value}
                       onClick={() => { setSelectedTopic(topic.value); setUseCustom(false); }}
-                      className="p-2.5 flex flex-col items-center gap-1 text-center transition-all duration-150 topic-btn"
+                      className="p-3 flex flex-col items-center justify-center gap-2 text-center rounded-xl topic-btn cartoon-press"
                       style={isActive ? {
-                        ...rpgBtn,
-                        background: "linear-gradient(180deg, #3a2200 0%, #2a1600 50%, #3a2200 100%)",
-                        border: "2px solid #d4a827",
+                        backgroundColor: "#FFF4ED",
+                        border: "2px solid #FF8C42",
+                        color: "#FF8C42",
                       } : {
-                        background: "rgba(0,0,0,0.3)",
-                        border: "1px solid #3a2208",
-                        borderRadius: "4px",
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #E0E0E0",
+                        color: "#636E72",
                       }}>
-                      <span className="text-xl">{topic.emoji}</span>
-                      <span className="text-[10px] font-bold leading-tight"
-                        style={{ color: isActive ? "#f5d680" : "#6b4a1a" }}>
+                      <span className="text-3xl drop-shadow-sm">{topic.emoji}</span>
+                      <span className="text-xs font-bold leading-tight">
                         {topic.label}
                       </span>
                     </button>
                   );
                 })}
                 <button onClick={() => setUseCustom(true)}
-                  className="p-2.5 flex flex-col items-center gap-1 text-center transition-all topic-btn"
+                  className="p-3 flex flex-col items-center justify-center gap-2 text-center rounded-xl topic-btn cartoon-press"
                   style={useCustom ? {
-                    ...rpgBtn,
-                    background: "linear-gradient(180deg, #3a2200 0%, #2a1600 50%, #3a2200 100%)",
-                    border: "2px solid #d4a827",
+                    backgroundColor: "#FFF4ED",
+                    border: "2px solid #FF8C42",
+                    color: "#FF8C42",
                   } : {
-                    background: "rgba(0,0,0,0.3)",
-                    border: "1px dashed #3a2208",
-                    borderRadius: "4px",
+                    backgroundColor: "#FAFAFA",
+                    border: "2px dashed #DFE6E9",
+                    color: "#636E72",
                   }}>
-                  <span className="text-xl">✏️</span>
-                  <span className="text-[10px] font-bold" style={{ color: useCustom ? "#f5d680" : "#6b4a1a" }}>กำหนดเอง</span>
+                  <span className="text-3xl drop-shadow-sm">✏️</span>
+                  <span className="text-xs font-bold">กำหนดเอง</span>
                 </button>
               </div>
               {useCustom && (
                 <input value={customTopic} onChange={e => setCustomTopic(e.target.value)}
                   placeholder="เช่น นักร้องไทยยุค 90..." autoFocus maxLength={80}
-                  className="mt-2 w-full px-3 py-2.5 text-sm outline-none"
-                  style={{ background: "rgba(0,0,0,0.4)", border: "1px solid #c8911a", borderRadius: "4px", color: "#f5d680" }} />
+                  className="mt-3 w-full px-4 py-3 text-sm font-semibold rounded-xl outline-none transition-all focus:ring-2 focus:ring-orange-300"
+                  style={{ backgroundColor: "#F8F9FA", border: "2px solid #FF8C42", color: "#2D3436" }} />
               )}
             </div>
 
             {/* Difficulty */}
             <div>
-              <p className="text-[10px] font-bold mb-2" style={{ color: "#9a6e10", letterSpacing: "0.08em" }}>ระดับความยาก</p>
-              <div className="grid grid-cols-3 gap-2">
+              <p className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: "#2D3436" }}>🔥 ระดับความยาก</p>
+              <div className="grid grid-cols-3 gap-3">
                 {DIFFICULTY_OPTIONS.map(opt => (
                   <button key={opt.value} onClick={() => setDifficulty(opt.value)}
-                    className="py-2.5 px-2 text-xs font-bold text-center transition-all"
+                    className="py-3 px-2 text-sm font-bold text-center transition-all rounded-full cartoon-press"
                     style={difficulty === opt.value ? {
-                      ...rpgBtn,
-                      padding: "10px 8px",
+                      backgroundColor: opt.color,
+                      color: "#FFFFFF",
+                      boxShadow: `0 4px 0 \${opt.shadow}`,
+                      border: "none",
                     } : {
-                      background: "rgba(0,0,0,0.3)",
-                      border: "1px solid #3a2208",
-                      borderRadius: "4px",
-                      color: "#6b4a1a",
+                      backgroundColor: "#FFFFFF",
+                      color: "#636E72",
+                      border: "2px solid #DFE6E9",
                     }}>
                     {opt.label}
-                    <div className="text-[9px] mt-0.5 opacity-60">{opt.desc}</div>
                   </button>
                 ))}
               </div>
@@ -312,27 +308,32 @@ export function Setup({
 
             {/* AI button */}
             {aiDone && (
-              <div className="px-4 py-2.5 text-sm text-center font-semibold rounded"
-                style={{ background: "rgba(52,211,153,0.1)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }}>
+              <div className="px-4 py-3 text-sm text-center font-bold rounded-xl"
+                style={{ backgroundColor: "#E3FAEA", color: "#3BAA4C", border: "2px solid #51CF66" }}>
                 ✅ สุ่มคำตอบให้ทุกคนแล้ว!
               </div>
             )}
             <button onClick={handleAI} disabled={loading || !effectiveTopic}
-              className="w-full py-4 text-sm font-black tracking-wider transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed ai-btn"
-              style={rpgBtnPrimary}>
-              {loading ? "🤖 AI กำลังสุ่ม..." : "✨ สุ่มคำตอบให้ทุกคน"}
+              className="w-full py-4 text-lg font-black transition-all disabled:opacity-50 disabled:cursor-not-allowed ai-btn cartoon-press rounded-full"
+              style={{ 
+                backgroundColor: "#FF8C42", 
+                color: "#FFFFFF", 
+                boxShadow: "0 6px 0 #D96A25", 
+                border: "none" 
+              }}>
+              {loading ? "🤖 กำลังสุ่ม..." : "✨ สุ่มคำตอบให้ทุกคน"}
             </button>
           </>
         ) : (
           /* Non-host: read-only */
-          <div className="text-center py-6 space-y-3">
-            <p className="text-sm font-bold" style={{ color: "#c8911a" }}>⏳ รอ Host เลือกหัวข้อ...</p>
-            <p className="text-xs" style={{ color: "#5a3a08" }}>เฉพาะเจ้าของห้องเท่านั้นที่สุ่มคำตอบได้</p>
+          <div className="text-center py-8 space-y-4">
+            <p className="text-lg font-black" style={{ color: "#FF8C42" }}>⏳ รอ Host เลือกหัวข้อ...</p>
+            <p className="text-sm font-bold" style={{ color: "#636E72" }}>เฉพาะเจ้าของห้องเท่านั้นที่สุ่มคำตอบได้</p>
             {room.topic && (
-              <div className="mt-3 inline-block px-4 py-3 rounded"
-                style={{ background: "rgba(0,0,0,0.3)", border: "1px solid #c8911a" }}>
-                <p className="text-[10px] mb-1" style={{ color: "#9a6e10" }}>หัวข้อที่เลือก</p>
-                <p className="text-sm font-bold" style={{ color: "#f5d680" }}>{room.topic}</p>
+              <div className="mt-4 inline-block px-6 py-4 rounded-xl shadow-sm"
+                style={{ backgroundColor: "#FFF4ED", border: "2px solid #FFCDAD" }}>
+                <p className="text-xs font-bold mb-1" style={{ color: "#D96A25" }}>หัวข้อที่เลือก</p>
+                <p className="text-lg font-black" style={{ color: "#FF8C42" }}>{room.topic}</p>
               </div>
             )}
           </div>
@@ -341,35 +342,40 @@ export function Setup({
 
       {/* Error */}
       {error && (
-        <div className="px-4 py-3 text-sm font-semibold rounded"
-          style={{ background: "rgba(251,113,133,0.1)", color: "#fb7185", border: "1px solid rgba(251,113,133,0.25)" }}>
+        <div className="px-5 py-4 text-sm font-bold rounded-xl"
+          style={{ backgroundColor: "#FFEDED", color: "#D32F2F", border: "2px solid #FF5252" }}>
           ⚠️ {error}
         </div>
       )}
 
       {/* ── Start Game (host only) ── */}
       {amHost && (
-        <div className="p-4 space-y-2 animate-stagger-3" style={rpgCard}>
+        <div className="p-5 space-y-3 animate-stagger-3" style={cartoonCard}>
           {needAnswer.length > 0 && (
-            <p className="text-xs text-center pb-1" style={{ color: "#9a6e10" }}>
+            <p className="text-sm text-center font-bold pb-2" style={{ color: "#FF8C42" }}>
               ⚠️ กด "สุ่มคำตอบให้ทุกคน" ด้านบนก่อน ({readyCount}/{activePlayers.length} พร้อม)
             </p>
           )}
           <button onClick={handleStart} disabled={loading || needAnswer.length > 0}
-            className="w-full py-4 text-base font-black tracking-wider transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed start-btn"
-            style={rpgBtnPrimary}>
+            className="w-full py-4 text-xl font-black transition-all disabled:opacity-50 disabled:cursor-not-allowed start-btn cartoon-press rounded-full"
+            style={{ 
+              backgroundColor: "#51CF66", 
+              color: "#FFFFFF", 
+              boxShadow: "0 6px 0 #3BAA4C", 
+              border: "none" 
+            }}>
             ⚔️ เริ่มเกม!
           </button>
         </div>
       )}
       {!amHost && (
-        <div className="p-4 text-center animate-stagger-3" style={rpgCard}>
+        <div className="p-5 text-center animate-stagger-3" style={cartoonCard}>
           {needAnswer.length === 0 ? (
-            <p className="text-sm font-bold" style={{ color: "#c8911a" }}>✅ ทุกคนพร้อม — รอ Host กดเริ่มเกม</p>
+            <p className="text-lg font-black" style={{ color: "#51CF66" }}>✅ ทุกคนพร้อม — รอ Host กดเริ่มเกม</p>
           ) : (
             <>
-              <p className="text-sm font-bold" style={{ color: "#c8911a" }}>⏳ รอ Host สุ่มคำตอบ... ({readyCount}/{activePlayers.length} คน)</p>
-              <p className="text-xs mt-1" style={{ color: "#5a3a08" }}>เฉพาะเจ้าของห้องเท่านั้นที่สุ่มคำตอบได้</p>
+              <p className="text-lg font-black" style={{ color: "#FF8C42" }}>⏳ รอ Host สุ่มคำตอบ... ({readyCount}/{activePlayers.length} คน)</p>
+              <p className="text-sm font-bold mt-2" style={{ color: "#636E72" }}>เฉพาะเจ้าของห้องเท่านั้นที่สุ่มคำตอบได้</p>
             </>
           )}
         </div>

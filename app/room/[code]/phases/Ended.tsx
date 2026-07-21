@@ -6,12 +6,12 @@ import type { PublicRoomState } from "@/lib/types";
 import { nextRound } from "@/lib/api-client";
 
 const MEDAL = ["🥇", "🥈", "🥉"];
-const CONFETTI_COLORS = ["#6366f1", "#8b5cf6", "#fbbf24", "#34d399", "#fb7185", "#38bdf8", "#f472b6"];
+const CONFETTI_COLORS = ["#FF8C42", "#4DACF7", "#51CF66", "#FFD43B", "#FF6B6B", "#9B59B6", "#1ABC9C"];
 
 function Confetti() {
   const count = 28;
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[16px]">
       {Array.from({ length: count }).map((_, i) => {
         const left = `${((i * 37) % 97) + 1}%`;
         const duration = `${2.2 + (i % 5) * 0.35}s`;
@@ -74,25 +74,22 @@ export function Ended({
   }
 
   const cardStyle = {
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "1rem",
+    background: "#FFFFFF",
+    border: "2px solid #E0E0E0",
+    borderRadius: "16px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
   };
 
   return (
-    <div className="w-full max-w-md space-y-4 animate-slide-up">
+    <div className="w-full max-w-3xl mx-auto space-y-4 animate-slide-up">
       {/* Winner card */}
       <div
         className="relative p-7 text-center overflow-hidden"
         style={{
           ...cardStyle,
-          background: iWon
-            ? "rgba(251,191,36,0.07)"
-            : "rgba(255,255,255,0.04)",
-          border: iWon
-            ? "1px solid rgba(251,191,36,0.3)"
-            : "1px solid rgba(255,255,255,0.08)",
-          boxShadow: iWon ? "0 0 40px rgba(251,191,36,0.15)" : "none",
+          background: iWon ? "#FFF9DB" : "#FFFFFF",
+          border: iWon ? "2px solid #FFD43B" : "2px solid #E0E0E0",
+          boxShadow: iWon ? "0 8px 24px rgba(255,212,59,0.2)" : cardStyle.boxShadow,
         }}
       >
         {/* Confetti — always shown for the top finisher celebration */}
@@ -100,20 +97,20 @@ export function Ended({
 
         <div
           className="relative text-6xl mb-3 animate-trophy inline-block"
-          style={{ filter: "drop-shadow(0 0 20px rgba(251,191,36,0.6))" }}
+          style={{ filter: "drop-shadow(0 4px 8px rgba(255,212,59,0.6))" }}
         >
           🏆
         </div>
-        <h2 className="relative text-3xl font-black gradient-text mb-1">
+        <h2 className="relative text-3xl font-black mb-1" style={{ color: "#2D3436" }}>
           จบรอบที่ {room.round}
         </h2>
         {winner && (
-          <p className="relative text-slate-400 text-sm">
+          <p className="relative text-base font-bold" style={{ color: "#636E72" }}>
             ผู้นำ:{" "}
             <span
-              className="font-bold"
+              className="font-black text-lg"
               style={{
-                color: iWon ? "#fbbf24" : "#e2e8f0",
+                color: iWon ? "#FFD43B" : "#FF8C42",
               }}
             >
               {winner.name}
@@ -123,11 +120,11 @@ export function Ended({
         )}
         {iWonRound && (
           <div
-            className="relative mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold animate-pulse-success"
+            className="relative mt-3 inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-black animate-pulse-success"
             style={{
-              background: "rgba(251,191,36,0.15)",
-              color: "#fbbf24",
-              border: "1px solid rgba(251,191,36,0.3)",
+              background: "#E8F5E9",
+              color: "#51CF66",
+              border: "2px solid #51CF66",
             }}
           >
             ✨ คุณทายถูกก่อนใครรอบนี้!
@@ -137,84 +134,88 @@ export function Ended({
 
       {/* Scoreboard */}
       <div style={cardStyle} className="p-5">
-        <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
+        <div className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: "#636E72" }}>
           คะแนนรวม
         </div>
-        <div className="space-y-2">
-          {ranked.map((p, i) => (
-            <div
-              key={p.id}
-              className="flex items-center gap-3 rounded-xl px-4 py-3 animate-slide-in-right"
-              style={{
-                background:
-                  p.id === playerId
-                    ? "rgba(99,102,241,0.08)"
-                    : i === 0
-                    ? "rgba(251,191,36,0.06)"
-                    : "rgba(255,255,255,0.03)",
-                border:
-                  p.id === playerId
-                    ? "1px solid rgba(99,102,241,0.2)"
-                    : i === 0
-                    ? "1px solid rgba(251,191,36,0.15)"
-                    : "1px solid rgba(255,255,255,0.05)",
-                animationDelay: `${i * 80}ms`,
-              }}
-            >
-              <span className="text-lg w-7 text-center flex-shrink-0">
-                {MEDAL[i] ?? <span className="text-sm font-mono text-slate-600">{i + 1}</span>}
-              </span>
-              <span
-                className="flex-1 text-sm font-medium truncate"
-                style={{ color: p.id === playerId ? "#818cf8" : "#cbd5e1" }}
-              >
-                {p.name}
-                {p.id === playerId && (
-                  <span className="ml-1.5 text-xs text-indigo-400">(คุณ)</span>
-                )}
-              </span>
-              <span
-                className="font-mono font-bold text-base animate-count-up"
+        <div className="space-y-3">
+          {ranked.map((p, i) => {
+            const rankColor = i === 0 ? "#FFD43B" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#E0E0E0";
+            return (
+              <div
+                key={p.id}
+                className="flex items-center gap-4 rounded-[16px] px-4 py-3 animate-slide-in-right"
                 style={{
-                  color: i === 0 ? "#fbbf24" : i === 1 ? "#94a3b8" : "#cbd5e1",
-                  animationDelay: `${i * 100 + 200}ms`,
+                  background: p.id === playerId ? "#FFF3E0" : "#F8F9FA",
+                  border: p.id === playerId ? "2px solid #FF8C42" : "2px solid #E0E0E0",
+                  animationDelay: `${i * 80}ms`,
                 }}
               >
-                {p.score}
-              </span>
-            </div>
-          ))}
+                <span 
+                  className="w-10 h-10 rounded-full flex items-center justify-center font-black text-lg flex-shrink-0"
+                  style={{ 
+                    backgroundColor: rankColor, 
+                    color: i < 3 ? "#FFFFFF" : "#636E72",
+                    textShadow: i < 3 ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                  }}
+                >
+                  {i < 3 ? MEDAL[i] : i + 1}
+                </span>
+                <span
+                  className="flex-1 text-lg font-black truncate"
+                  style={{ color: "#2D3436" }}
+                >
+                  {p.name}
+                  {p.id === playerId && (
+                    <span className="ml-2 text-sm font-bold" style={{ color: "#FF8C42" }}>(คุณ)</span>
+                  )}
+                </span>
+                <span
+                  className="font-black text-2xl animate-count-up px-4 py-1 rounded-xl"
+                  style={{
+                    backgroundColor: rankColor,
+                    color: i < 3 ? "#FFFFFF" : "#636E72",
+                    textShadow: i < 3 ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    animationDelay: `${i * 100 + 200}ms`,
+                  }}
+                >
+                  {p.score}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Round finishers */}
       {room.finishers.length > 0 && (
         <div style={cardStyle} className="p-5">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+          <div className="text-sm font-bold uppercase tracking-wider mb-3" style={{ color: "#636E72" }}>
             ลำดับทายถูกรอบนี้
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {room.finishers.map((fid, i) => {
               const p = room.players.find((x) => x.id === fid);
               const pts = [3, 2, 1][i] ?? 0;
               return (
                 <div
                   key={fid}
-                  className="flex items-center justify-between rounded-xl px-3 py-2"
+                  className="flex items-center justify-between rounded-[16px] px-4 py-3"
                   style={{
-                    background: "rgba(52,211,153,0.06)",
-                    border: "1px solid rgba(52,211,153,0.15)",
+                    background: "#E8F5E9",
+                    border: "2px solid #51CF66",
                   }}
                 >
-                  <span className="text-sm text-slate-300">
+                  <span className="text-lg font-black" style={{ color: "#2D3436" }}>
                     {MEDAL[i] ?? `${i + 1}.`} {p?.name}
                     {fid === playerId && (
-                      <span className="ml-1.5 text-xs text-indigo-400">(คุณ)</span>
+                      <span className="ml-2 text-sm font-bold" style={{ color: "#51CF66" }}>(คุณ)</span>
                     )}
                   </span>
                   <span
-                    className="font-mono font-bold text-sm"
-                    style={{ color: "#34d399" }}
+                    className="font-black text-xl px-3 py-1 rounded-lg"
+                    style={{ backgroundColor: "#51CF66", color: "#FFFFFF", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
                   >
                     +{pts}
                   </span>
@@ -227,12 +228,11 @@ export function Ended({
 
       {/* Answers reveal */}
       <div style={cardStyle} className="p-5">
-        <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+        <div className="text-sm font-bold uppercase tracking-wider mb-3" style={{ color: "#636E72" }}>
           เฉลยคำตอบ
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {room.players.filter(p => !p.isSpectator).map((p, i) => {
-            // allAnswers revealed for everyone in ended phase (see toPublic)
             const ans = p.id === playerId
               ? (room.myAnswer ?? room.allAnswers[p.id])
               : room.allAnswers[p.id] ?? room.answers[p.id];
@@ -240,22 +240,22 @@ export function Ended({
             return (
               <div
                 key={p.id}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 animate-fade-in"
+                className="flex items-center gap-4 rounded-[16px] px-4 py-3 animate-fade-in"
                 style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "#F8F9FA",
+                  border: "2px solid #E0E0E0",
                   animationDelay: `${i * 60}ms`,
                 }}
               >
                 {imgUrl && (
-                  <img src={imgUrl} alt={ans ?? ""} className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                    style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+                  <img src={imgUrl} alt={ans ?? ""} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 shadow-sm"
+                    style={{ border: "2px solid #E0E0E0" }}
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                 )}
-                <span className="text-sm text-slate-400 flex-1">{p.name}</span>
+                <span className="text-lg font-bold flex-1" style={{ color: "#636E72" }}>{p.name}</span>
                 <span
-                  className="text-sm font-semibold"
-                  style={{ color: "#818cf8" }}
+                  className="text-xl font-black"
+                  style={{ color: "#4DACF7" }}
                 >
                   {ans ?? "?"}
                 </span>
@@ -266,52 +266,76 @@ export function Ended({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 pb-4">
+      <div className="flex gap-4 pb-6 pt-2">
         {amHost ? (
           <button
             id="btn-next-round"
             onClick={handleNext}
             disabled={loading}
-            className="flex-1 py-3.5 rounded-xl font-bold text-white transition-all duration-200 disabled:opacity-50"
+            className="flex-1 py-4 font-black text-white text-xl transition-all duration-200 disabled:opacity-50"
             style={{
-              background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-              boxShadow: "0 8px 24px rgba(99,102,241,0.4)",
+              background: "#FF8C42",
+              boxShadow: "0 6px 0 #D66D24, 0 8px 16px rgba(255,140,66,0.3)",
+              border: "3px solid #FFFFFF",
+              borderRadius: "999px",
+              transform: "translateY(0)",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = "translateY(6px)";
+              e.currentTarget.style.boxShadow = "0 0 0 #D66D24, 0 4px 8px rgba(255,140,66,0.3)";
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 6px 0 #D66D24, 0 8px 16px rgba(255,140,66,0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 6px 0 #D66D24, 0 8px 16px rgba(255,140,66,0.3)";
+            }}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                <span className="w-6 h-6 rounded-full border-4 border-white/30 border-t-white animate-spin" />
                 ...
               </span>
             ) : "🔄 เริ่มรอบใหม่"}
           </button>
         ) : (
           <div
-            className="flex-1 text-center py-3.5 text-sm text-slate-500 rounded-xl"
-            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
+            className="flex-1 text-center py-4 text-lg font-black text-white rounded-[999px] flex items-center justify-center"
+            style={{ 
+              background: "#FF8C42", 
+              boxShadow: "0 6px 0 #D66D24, 0 8px 16px rgba(255,140,66,0.3)",
+              border: "3px solid #FFFFFF",
+              opacity: 0.8
+            }}
           >
-            <span className="animate-blink mr-1">⏳</span>
+            <span className="animate-blink mr-2">⏳</span>
             รอ host เริ่มรอบใหม่...
           </div>
         )}
         <button
           id="btn-exit"
           onClick={() => router.push("/")}
-          className="px-5 py-3.5 rounded-xl text-sm font-semibold transition-all duration-150"
+          className="px-8 py-4 font-black text-white text-xl transition-all duration-150"
           style={{
-            background: "rgba(255,255,255,0.06)",
-            color: "#94a3b8",
-            border: "1px solid rgba(255,255,255,0.09)",
+            background: "#4DACF7",
+            boxShadow: "0 6px 0 #2A8CD9, 0 8px 16px rgba(77,172,247,0.3)",
+            border: "3px solid #FFFFFF",
+            borderRadius: "999px",
+            transform: "translateY(0)",
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-            e.currentTarget.style.color = "#e2e8f0";
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = "translateY(6px)";
+            e.currentTarget.style.boxShadow = "0 0 0 #2A8CD9, 0 4px 8px rgba(77,172,247,0.3)";
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 6px 0 #2A8CD9, 0 8px 16px rgba(77,172,247,0.3)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-            e.currentTarget.style.color = "#94a3b8";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 6px 0 #2A8CD9, 0 8px 16px rgba(77,172,247,0.3)";
           }}
         >
           ออก
@@ -320,3 +344,4 @@ export function Ended({
     </div>
   );
 }
+

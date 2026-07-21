@@ -158,192 +158,138 @@ export function Playing({
     }
   }
 
-  const cardStyle = {
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "1rem",
+  const cartoonCard = {
+    background: "#FFFFFF",
+    borderRadius: "16px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+    border: "2px solid #E0E0E0",
   };
 
+  const spectators = room.players.filter(p => p.isSpectator);
+
   return (
-    <div className="w-full max-w-2xl grid gap-4 md:grid-cols-[1fr_320px] animate-fade-in">
-      {/* ── Left column ── */}
-      <div className="space-y-3">
-        {/* Timer */}
-        <CountdownTimer
-          roundStartedAt={room.roundStartedAt ?? 0}
-          roundDurationSeconds={room.roundDurationSeconds ?? 420}
-          onTimeUp={handleTimeUp}
-        />
-        {/* My answer card — HIDDEN! The whole game is guessing what's on your head */}
-        <div
-          className="p-4 text-center"
-          style={{
-            ...cardStyle,
-            background: "rgba(99,102,241,0.07)",
-            border: "1px solid rgba(99,102,241,0.25)",
-            boxShadow: "0 0 24px rgba(99,102,241,0.12)",
-          }}
-        >
-          <div className="text-[10px] font-bold uppercase tracking-widest text-indigo-400/70 mb-1">
-            คำตอบบนหัวคุณ
-          </div>
-          <div className="text-3xl font-bold text-indigo-300" style={{ textShadow: "0 0 20px rgba(99,102,241,0.5)" }}>
-            ❓
-          </div>
-          <div className="text-xs text-indigo-400/50 mt-1">
-            ถามคำถาม yes/no เพื่อทายว่าคุณคือใคร!
-          </div>
-        </div>
+    <div className="w-full max-w-7xl mx-auto space-y-4 animate-fade-in text-[#2D3436]">
+      <style>{`
+        @keyframes pop { 0% {transform: scale(0.95)} 50% {transform: scale(1.05)} 100% {transform: scale(1)} }
+        @keyframes bounceGlow { 0%,100%{box-shadow:0 0 0 4px #FF8C42, 0 8px 16px rgba(255,140,66,0.2)} 50%{box-shadow:0 0 0 6px #FF8C42, 0 12px 24px rgba(255,140,66,0.4)} }
+      `}</style>
 
-        {/* Waiting for answer banner */}
-        {room.waitingForAnswer && lastQuestion && (
-          <div
-            className="p-4 animate-slide-up"
-            style={{
-              ...cardStyle,
-              background: "rgba(251,191,36,0.07)",
-              border: "1px solid rgba(251,191,36,0.25)",
-            }}
-          >
-            <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400/70 mb-1.5">
-              <span className="animate-blink mr-1">⏳</span> รอคำตอบ
-            </div>
-            <div className="text-sm font-semibold text-amber-200">
-              ❓ {lastQuestion.text}
-            </div>
-            <div className="text-xs text-amber-500/70 mt-1">
-              ถามโดย {lastQuestion.fromName} — รอให้คนอื่นตอบ yes/no
-            </div>
-          </div>
-        )}
+      {/* Timer */}
+      <CountdownTimer
+        roundStartedAt={room.roundStartedAt ?? 0}
+        roundDurationSeconds={room.roundDurationSeconds ?? 420}
+        onTimeUp={handleTimeUp}
+      />
 
-        {/* Turn indicator */}
-        <div style={cardStyle} className="p-4">
-          <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">ตาปัจจุบัน</div>
-          <div className="flex items-center gap-3">
-            {room.players.map((p) => {
-              const isCurrent = p.id === room.currentTurnId;
-              const isLocked = p.guessedCorrectly || p.guessedThisRound;
-              return (
-                <div
-                  key={p.id}
-                  className="flex flex-col items-center gap-1 transition-all duration-300"
-                  style={{ opacity: isLocked && !isCurrent ? 0.35 : 1 }}
-                >
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-300"
-                    style={
-                      isCurrent
-                        ? {
-                            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                            boxShadow: "0 0 0 3px rgba(99,102,241,0.4), 0 0 20px rgba(99,102,241,0.3)",
-                            animation: "pulseRing 2.2s ease-in-out infinite",
-                          }
-                        : p.guessedCorrectly
-                        ? { background: "rgba(52,211,153,0.2)", border: "1px solid rgba(52,211,153,0.3)" }
-                        : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }
-                    }
-                  >
-                    {p.guessedCorrectly ? "✓" : p.name.charAt(0).toUpperCase()}
-                  </div>
-                  <span
-                    className="text-[9px] font-medium truncate max-w-12 text-center"
-                    style={{
-                      color: isCurrent ? "#818cf8" : p.guessedCorrectly ? "#34d399" : "#64748b",
-                    }}
-                  >
-                    {p.id === playerId ? "คุณ" : p.name.split(" ")[0]}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          {isMyTurn && !room.waitingForAnswer && canAct && (
+      {/* ── Player Answer Cards ── */}
+      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(room.players.filter(p=>!p.isSpectator).length, 6)}, 1fr)` }}>
+        {room.players.filter(p => !p.isSpectator).map((p) => {
+          const isMe = p.id === playerId;
+          const isCurrent = p.id === room.currentTurnId;
+          const answer = isMe ? null : (room.answers[p.id] ?? null);
+          const imgUrl = isMe ? null : (room.answerImages?.[p.id] ?? null);
+          return (
             <div
-              className="mt-3 text-xs font-semibold animate-pulse-ring rounded-lg px-3 py-1.5 text-center"
-              style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8" }}
+              key={p.id}
+              className="flex flex-col items-center text-center p-3 rounded-2xl transition-all duration-300"
+              style={{
+                background: "#FFFFFF",
+                borderRadius: "16px",
+                border: isCurrent ? "2px solid #FF8C42" : "2px solid #E0E0E0",
+                boxShadow: isCurrent ? "0 0 0 4px #FF8C42, 0 8px 16px rgba(255,140,66,0.3)" : "0 4px 12px rgba(0,0,0,0.08)",
+                animation: isCurrent ? "bounceGlow 2s ease-in-out infinite" : undefined,
+                opacity: p.guessedCorrectly ? 0.5 : 1,
+              }}
             >
-              ✨ ตาคุณ! เลือกถามหรือทาย
+              {/* Avatar / Image */}
+              <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center mb-2 flex-shrink-0"
+                style={{
+                  border: isCurrent ? "4px solid #FF8C42" : "3px solid #E0E0E0",
+                  background: isMe ? "linear-gradient(135deg, #A855F7, #D946EF)" : "#FFF8F0",
+                }}
+              >
+                {isMe ? (
+                  <span className="text-3xl text-white font-bold drop-shadow-md">❓</span>
+                ) : imgUrl ? (
+                  <img src={imgUrl} alt="" className="w-full h-full object-cover"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                ) : (
+                  <span className="text-3xl">🤡</span>
+                )}
+              </div>
+              {/* Answer name */}
+              <div className="text-sm font-black truncate w-full px-1"
+                style={{ color: isMe ? "#D946EF" : p.guessedCorrectly ? "#51CF66" : "#2D3436" }}>
+                {isMe ? "ทายสิ!" : p.guessedCorrectly ? "✅ ทายถูก" : (answer ?? "?")}
+              </div>
+              {/* Player name */}
+              <div className="text-xs font-semibold truncate w-full mt-1" style={{ color: isCurrent ? "#FF8C42" : "#636E72" }}>
+                {isMe ? "คุณ" : p.name}
+                {isCurrent && <span className="ml-1">🎯</span>}
+              </div>
+              {/* Score */}
+              <div className="text-xs font-black mt-1 bg-slate-100 rounded-full px-2 py-0.5" style={{ color: "#4DACF7" }}>
+                {p.score} pt
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      {spectators.length > 0 && (
+        <div className="text-center text-sm font-semibold mt-2" style={{ color: "#636E72" }}>
+          👀 ผู้ชม: {spectators.map(s => s.name).join(", ")}
+        </div>
+      )}
+
+      {/* ── Main game area ── */}
+      <div className="grid gap-4 md:grid-cols-[1fr_350px]">
+        {/* Left: Actions */}
+        <div className="space-y-4">
+          {/* Turn info banner */}
+          <div style={{...cartoonCard, background: isMyTurn ? "#FF8C42" : "#FFFFFF", border: isMyTurn ? "none" : "2px solid #E0E0E0"}} className="p-4 rounded-2xl">
+            {isMyTurn && !room.waitingForAnswer && canAct ? (
+              <div className="text-center">
+                <div className="text-xl font-black text-white mb-1 drop-shadow-sm">
+                  ✨ ตาคุณ!
+                </div>
+                <div className="text-sm text-orange-100 font-medium">
+                  เลือกถามคำถาม yes/no หรือทายคำตอบ
+                </div>
+              </div>
+            ) : isMyTurn && room.waitingForAnswer ? (
+              <div className="text-center text-sm font-bold text-white drop-shadow-sm">
+                ⏳ รอผู้เล่นคนอื่นตอบคำถามของคุณ
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="text-sm font-bold" style={{ color: "#636E72" }}>
+                  ⌛ รอตา <span style={{ color: "#FF8C42", fontSize: "1.1em" }}>{room.players.find((p) => p.id === room.currentTurnId)?.name ?? "..."}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Waiting for answer banner */}
+          {room.waitingForAnswer && lastQuestion && !isMyTurn && (
+            <div className="p-4 rounded-2xl" style={{ ...cartoonCard, border: "2px solid #FFD43B", background: "#FFFDF0" }}>
+              <div className="text-xs font-black mb-2" style={{ color: "#F59F00" }}>
+                ⏳ รอคำตอบ
+              </div>
+              <div className="text-lg font-black" style={{ color: "#2D3436" }}>❓ {lastQuestion.text}</div>
+              <div className="text-xs mt-2 font-semibold" style={{ color: "#636E72" }}>ถามโดย {lastQuestion.fromName}</div>
             </div>
           )}
-          {isMyTurn && room.waitingForAnswer && (
-            <div
-              className="mt-3 text-xs rounded-lg px-3 py-1.5 text-center"
-              style={{ background: "rgba(251,191,36,0.08)", color: "#fbbf24" }}
-            >
-              รอผู้เล่นคนอื่นตอบคำถามของคุณก่อน
-            </div>
-          )}
-        </div>
 
-        {/* Scoreboard */}
-        <div style={cardStyle} className="p-4">
-          <div className="text-xs text-slate-500 uppercase tracking-wider mb-3">
-            คะแนน · รอบ {room.round}
-          </div>
-          <div className="space-y-2">
-            {[...room.players]
-              .sort((a, b) => b.score - a.score)
-              .map((p, rank) => (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2 transition-all duration-200"
-                  style={{
-                    background: p.id === playerId
-                      ? "rgba(99,102,241,0.08)"
-                      : "rgba(255,255,255,0.03)",
-                    border: p.id === playerId
-                      ? "1px solid rgba(99,102,241,0.2)"
-                      : "1px solid rgba(255,255,255,0.05)",
-                  }}
-                >
-                  <span
-                    className="w-5 text-center text-xs font-mono font-bold"
-                    style={{ color: rank === 0 ? "#fbbf24" : rank === 1 ? "#94a3b8" : rank === 2 ? "#b45309" : "#475569" }}
-                  >
-                    {rank + 1}
-                  </span>
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {/* Answer image for other players */}
-                    {p.id !== playerId && room.answerImages?.[p.id] && (
-                      <img src={room.answerImages[p.id]} alt=""
-                        className="w-7 h-7 rounded object-cover flex-shrink-0"
-                        style={{ border: "1px solid rgba(255,255,255,0.1)" }}
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                    )}
-                    <span
-                      className="text-sm font-medium truncate"
-                      style={{
-                        color: p.guessedCorrectly
-                          ? "#34d399"
-                          : p.guessedThisRound
-                          ? "#475569"
-                          : "#cbd5e1",
-                        textDecoration: p.guessedThisRound && !p.guessedCorrectly ? "line-through" : "none",
-                      }}
-                    >
-                      {p.name}
-                      {p.id === playerId && <span className="ml-1 text-indigo-400 text-xs">(คุณ)</span>}
-                      {p.guessedCorrectly && <span className="ml-1 text-[10px]">✅</span>}
-                    </span>
-                  </div>
-                  <span className="font-mono font-bold text-sm" style={{ color: "#818cf8" }}>
-                    {p.score}
-                  </span>
-                </div>
-              ))}
-          </div>
-        </div>
-
-        {/* Action panel */}
-        <div style={cardStyle} className="p-4">
+          {/* Action panel */}
+          <div style={cartoonCard} className="p-5 rounded-2xl">
           {/* Locked out */}
           {!canAct ? (
-            <div className="text-center py-4">
-              <div className="text-2xl mb-2">
+            <div className="text-center py-6">
+              <div className="text-4xl mb-3">
                 {me?.guessedCorrectly ? "🎉" : "😴"}
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-base font-bold text-slate-500">
                 {me?.guessedCorrectly
                   ? "คุณทายถูกแล้ว! รอจบรอบ"
                   : "คุณทายไปแล้วในรอบนี้ รอจบรอบ"}
@@ -352,33 +298,35 @@ export function Playing({
           ) : /* Not my turn — show answer buttons if waiting */
           canAnswer ? (
             <div className="animate-slide-up">
-              <p className="text-xs text-slate-500 uppercase tracking-wider mb-3 font-semibold">
+              <p className="text-sm font-black mb-3" style={{ color: "#4DACF7" }}>
                 ตอบคำถาม
               </p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-3">
                 {([
-                  { val: "yes" as const, label: "✅ ใช่", color: "#10b981", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)" },
-                  { val: "no" as const, label: "❌ ไม่ใช่", color: "#fb7185", bg: "rgba(251,113,133,0.12)", border: "rgba(251,113,133,0.3)" },
-                  { val: "maybe" as const, label: "🤔 อาจจะ", color: "#fbbf24", bg: "rgba(251,191,36,0.12)", border: "rgba(251,191,36,0.3)" },
-                ] as const).map(({ val, label, color, bg, border }) => (
+                  { val: "yes" as const, label: "✅ ใช่", color: "#FFFFFF", bg: "#51CF66", shadow: "#37B24D" },
+                  { val: "no" as const, label: "❌ ไม่ใช่", color: "#FFFFFF", bg: "#FF6B6B", shadow: "#F03E3E" },
+                  { val: "maybe" as const, label: "🤔 อาจจะ", color: "#2D3436", bg: "#FFD43B", shadow: "#F59F00" },
+                ] as const).map(({ val, label, color, bg, shadow }) => (
                   <button
                     key={val}
                     id={`btn-answer-${val}`}
                     onClick={() => handleAnswer(val)}
                     disabled={loading}
-                    className="py-2.5 rounded-xl text-sm font-bold transition-all duration-150 disabled:opacity-40"
+                    className="py-3 rounded-full text-sm font-black transition-all duration-150 disabled:opacity-50"
                     style={{
-                      background: aiResult?.answer === val ? bg.replace("0.12","0.25") : bg,
-                      color, border: `1px solid ${border}`,
-                      boxShadow: aiResult?.answer === val ? `0 0 12px ${bg}` : "none",
-                      transform: aiResult?.answer === val ? "scale(1.05)" : "none",
+                      background: bg,
+                      color,
+                      border: "none",
+                      boxShadow: aiResult?.answer === val ? `0 6px 0 \${shadow}, 0 0 15px \${bg}` : `0 4px 0 \${shadow}`,
+                      transform: aiResult?.answer === val ? "scale(1.05) translateY(-2px)" : "none",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = aiResult?.answer === val ? "scale(1.05)" : ""; }}
+                    onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(4px)"; e.currentTarget.style.boxShadow = "none"; }}
+                    onMouseUp={(e) => { e.currentTarget.style.transform = aiResult?.answer === val ? "scale(1.05) translateY(-2px)" : ""; e.currentTarget.style.boxShadow = aiResult?.answer === val ? `0 6px 0 \${shadow}, 0 0 15px \${bg}` : `0 4px 0 \${shadow}`; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = aiResult?.answer === val ? "scale(1.05) translateY(-2px)" : ""; e.currentTarget.style.boxShadow = aiResult?.answer === val ? `0 6px 0 \${shadow}, 0 0 15px \${bg}` : `0 4px 0 \${shadow}`; }}
                   >
                     {label}
                     {aiResult?.answer === val && (
-                      <span className="ml-1 text-[10px] opacity-70">← AI</span>
+                      <span className="ml-1 text-[10px] opacity-90 block mt-1">← AI แนะนำ</span>
                     )}
                   </button>
                 ))}
@@ -389,17 +337,19 @@ export function Playing({
                 id="btn-ai-answer"
                 onClick={handleAIAnswer}
                 disabled={aiLoading || loading}
-                className="mt-3 w-full py-2 rounded-xl text-xs font-bold transition-all duration-200 disabled:opacity-40 flex items-center justify-center gap-2"
+                className="mt-4 w-full py-3 rounded-full text-sm font-bold transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
                 style={{
-                  background: aiLoading ? "rgba(56,189,248,0.08)" : "rgba(56,189,248,0.06)",
-                  border: "1px solid rgba(56,189,248,0.2)",
-                  color: "#38bdf8",
+                  background: "#E7F5FF",
+                  border: "2px solid #74C0FC",
+                  color: "#1C7ED6",
+                  boxShadow: "0 4px 0 #74C0FC",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(56,189,248,0.12)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(56,189,248,0.06)"; }}
+                onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(4px)"; e.currentTarget.style.boxShadow = "none"; }}
+                onMouseUp={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 0 #74C0FC"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 0 #74C0FC"; }}
               >
                 {aiLoading ? (
-                  <><span className="w-3 h-3 rounded-full border-2 border-cyan-400/30 border-t-cyan-400 animate-spin" />กำลังถาม AI...</>
+                  <><span className="w-4 h-4 rounded-full border-2 border-[#1C7ED6] border-t-transparent animate-spin" />กำลังถาม AI...</>
                 ) : (
                   <>🤖 ไม่รู้? ถาม AI ช่วยตอบ</>
                 )}
@@ -408,20 +358,20 @@ export function Playing({
               {/* AI result card */}
               {aiResult && (
                 <div
-                  className="mt-2 rounded-xl p-3 animate-slide-up"
-                  style={{ background: "rgba(56,189,248,0.07)", border: "1px solid rgba(56,189,248,0.2)" }}
+                  className="mt-3 rounded-xl p-4 animate-slide-up"
+                  style={{ background: "#E7F5FF", border: "2px solid #74C0FC" }}
                 >
-                  <div className="flex items-start gap-2">
-                    <span className="text-lg flex-shrink-0">🤖</span>
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl flex-shrink-0">🤖</span>
                     <div>
-                      <p className="text-xs font-bold text-cyan-300 mb-0.5">
+                      <p className="text-sm font-black text-[#1C7ED6] mb-1">
                         AI แนะนำ:{" "}
-                        <span style={{ color: aiResult.answer === "yes" ? "#34d399" : aiResult.answer === "no" ? "#fb7185" : "#fbbf24" }}>
+                        <span style={{ color: aiResult.answer === "yes" ? "#2B8A3E" : aiResult.answer === "no" ? "#C92A2A" : "#B08800" }}>
                           {aiResult.answer === "yes" ? "✅ ใช่" : aiResult.answer === "no" ? "❌ ไม่ใช่" : "🤔 อาจจะ"}
                         </span>
                       </p>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">{aiResult.reason}</p>
-                      <p className="text-[10px] text-slate-600 mt-1">กดปุ่มด้านบนเพื่อยืนยันคำตอบ</p>
+                      <p className="text-xs text-[#2D3436] font-medium leading-relaxed">{aiResult.reason}</p>
+                      <p className="text-[10px] text-[#636E72] mt-2 font-bold">กดปุ่มด้านบนเพื่อยืนยันคำตอบ</p>
                     </div>
                   </div>
                 </div>
@@ -431,29 +381,22 @@ export function Playing({
             /* My turn — ask or guess */
             <div className="animate-slide-up">
               <div
-                className="flex gap-1 p-1 rounded-xl mb-3"
-                style={{ background: "rgba(255,255,255,0.04)" }}
+                className="flex gap-2 mb-4 bg-slate-100 p-1.5 rounded-full"
               >
                 {(["ask", "guess"] as const).map((m) => (
                   <button
                     key={m}
                     id={`tab-action-${m}`}
                     onClick={() => setMode(m)}
-                    className="flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200"
+                    className="flex-1 py-2 rounded-full text-sm font-black transition-all duration-200"
                     style={
                       mode === m
                         ? {
-                            background:
-                              m === "guess"
-                                ? "linear-gradient(135deg, #f43f5e, #fb7185)"
-                                : "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                            color: "#fff",
-                            boxShadow:
-                              m === "guess"
-                                ? "0 4px 12px rgba(244,63,94,0.4)"
-                                : "0 4px 12px rgba(99,102,241,0.4)",
+                            background: m === "guess" ? "#FF6B6B" : "#4DACF7",
+                            color: "#FFF",
+                            boxShadow: `0 3px 0 \${m === "guess" ? "#F03E3E" : "#228BE6"}`,
                           }
-                        : { color: "#64748b" }
+                        : { color: "#636E72", background: "transparent" }
                     }
                   >
                     {m === "ask" ? "❓ ถาม" : "🎯 ทาย (เสี่ยง!)"}
@@ -468,45 +411,39 @@ export function Playing({
                   placeholder={
                     mode === "ask" ? "พิมพ์คำถาม yes/no..." : "ทายว่าคุณคือใคร..."
                   }
-                  className="flex-1 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200"
+                  className="flex-1 rounded-full px-4 py-3 text-sm text-[#2D3436] font-medium outline-none transition-all duration-200"
                   style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "#FFFFFF",
+                    border: "2px solid #E0E0E0",
                   }}
                   onFocus={(e) => {
-                    e.currentTarget.style.borderColor = mode === "guess" ? "#f43f5e" : "#6366f1";
-                    e.currentTarget.style.boxShadow = `0 0 0 3px ${mode === "guess" ? "rgba(244,63,94,0.2)" : "rgba(99,102,241,0.2)"}`;
+                    e.currentTarget.style.borderColor = mode === "guess" ? "#FF6B6B" : "#4DACF7";
                   }}
                   onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.borderColor = "#E0E0E0";
                   }}
                 />
                 <button
                   id={`btn-send-${mode}`}
                   type="submit"
                   disabled={loading || !input.trim()}
-                  className="px-4 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-40 transition-all duration-150"
+                  className="px-6 py-3 rounded-full text-sm font-black text-white disabled:opacity-50 transition-all duration-150"
                   style={{
-                    background:
-                      mode === "guess"
-                        ? "linear-gradient(135deg, #f43f5e, #fb7185)"
-                        : "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                    boxShadow:
-                      mode === "guess"
-                        ? "0 4px 12px rgba(244,63,94,0.35)"
-                        : "0 4px 12px rgba(99,102,241,0.35)",
+                    background: mode === "guess" ? "#FF6B6B" : "#4DACF7",
+                    boxShadow: `0 4px 0 \${mode === "guess" ? "#F03E3E" : "#228BE6"}`,
+                    border: "none"
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
+                  onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(4px)"; e.currentTarget.style.boxShadow = "none"; }}
+                  onMouseUp={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 4px 0 \${mode === "guess" ? "#F03E3E" : "#228BE6"}`; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 4px 0 \${mode === "guess" ? "#F03E3E" : "#228BE6"}`; }}
                 >
                   {mode === "guess" ? "ทาย!" : "ส่ง"}
                 </button>
               </form>
               {mode === "guess" && (
                 <p
-                  className="mt-2 text-xs rounded-lg px-3 py-1.5 animate-fade-in"
-                  style={{ background: "rgba(251,113,133,0.08)", color: "#fb7185" }}
+                  className="mt-3 text-xs font-bold text-center rounded-xl px-3 py-2 animate-fade-in"
+                  style={{ background: "#FFF5F5", color: "#E03131", border: "2px dashed #FF8787" }}
                 >
                   ⚠ ถ้าทาย จะหมดสิทธิ์ถามในรอบนี้ทันที
                 </p>
@@ -514,11 +451,11 @@ export function Playing({
             </div>
           ) : (
             /* Not my turn, not waiting — just wait */
-            <div className="text-center py-4">
-              <div className="text-2xl mb-2 animate-float">⌛</div>
-              <p className="text-sm text-slate-500">
+            <div className="text-center py-6">
+              <div className="text-4xl mb-3" style={{ animation: "pop 2s infinite" }}>⌛</div>
+              <p className="text-base font-bold" style={{ color: "#636E72" }}>
                 รอตา{" "}
-                <span className="text-slate-300 font-medium">
+                <span style={{ color: "#FF8C42" }}>
                   {room.players.find((p) => p.id === room.currentTurnId)?.name ?? "..."}
                 </span>
               </p>
@@ -527,17 +464,18 @@ export function Playing({
 
           {error && (
             <div
-              className="mt-3 rounded-xl px-3 py-2 text-sm animate-fade-in"
-              style={{ background: "rgba(251,113,133,0.1)", color: "#fb7185" }}
+              className="mt-3 rounded-xl px-4 py-3 text-sm font-bold animate-fade-in text-center"
+              style={{ background: "#FFE3E3", color: "#C92A2A", border: "2px solid #FF8787" }}
             >
               {error}
             </div>
           )}
+          </div>
         </div>
-      </div>
 
-      {/* ── Right column: Chat ── */}
-      <ChatPanel chat={room.chat} playerId={playerId} chatEndRef={chatEndRef} />
+        {/* Right column: Chat */}
+        <ChatPanel chat={room.chat} playerId={playerId} chatEndRef={chatEndRef} />
+      </div>
     </div>
   );
 }
@@ -555,17 +493,18 @@ function ChatPanel({
     <div
       className="rounded-2xl flex flex-col h-[460px] md:h-auto md:max-h-[600px]"
       style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.07)",
+        background: "#FFFFFF",
+        border: "2px solid #A5D8FF",
+        boxShadow: "0 4px 12px rgba(77,172,247,0.15)",
       }}
     >
       <div
-        className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 flex-shrink-0"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        className="px-4 py-3 text-sm font-black text-center"
+        style={{ borderBottom: "2px solid #A5D8FF", color: "#FF8C42", background: "#E7F5FF", borderTopLeftRadius: "14px", borderTopRightRadius: "14px" }}
       >
         💬 แชต
       </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2" style={{ background: "#F8F9FA", borderBottomLeftRadius: "14px", borderBottomRightRadius: "14px" }}>
         {chat.map((m, i) => (
           <ChatBubble key={m.id} msg={m} isMe={m.fromId === playerId} index={i} />
         ))}
@@ -587,29 +526,33 @@ function ChatBubble({
   const style = (() => {
     if (msg.type === "system") {
       return {
-        background: "rgba(251,191,36,0.08)",
-        color: "#fbbf24",
-        border: "1px solid rgba(251,191,36,0.15)",
+        background: "#E9ECEF",
+        color: "#495057",
+        border: "1px solid #DEE2E6",
+        boxShadow: "0 2px 0 #DEE2E6"
       };
     }
     if (msg.type === "question") {
       return {
-        background: isMe ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.1)",
-        color: "#a5b4fc",
-        border: `1px solid rgba(99,102,241,${isMe ? 0.4 : 0.2})`,
+        background: isMe ? "#D0EBFF" : "#E7F5FF",
+        color: "#1C7ED6",
+        border: `2px solid ${isMe ? "#74C0FC" : "#A5D8FF"}`,
+        boxShadow: `0 2px 0 ${isMe ? "#74C0FC" : "#A5D8FF"}`
       };
     }
     if (msg.type === "answer") {
-      return {
-        background: "rgba(255,255,255,0.05)",
-        color: "#94a3b8",
-        border: "1px solid rgba(255,255,255,0.08)",
-      };
+      if (msg.text === "yes") {
+        return { background: "#D3F9D8", color: "#2B8A3E", border: "2px solid #8CE99A", boxShadow: "0 2px 0 #8CE99A" };
+      } else if (msg.text === "no") {
+        return { background: "#FFE3E3", color: "#C92A2A", border: "2px solid #FFC9C9", boxShadow: "0 2px 0 #FFC9C9" };
+      } else {
+        return { background: "#FFF3BF", color: "#E67700", border: "2px solid #FFEC99", boxShadow: "0 2px 0 #FFEC99" };
+      }
     }
     // guess
     return msg.correct
-      ? { background: "rgba(52,211,153,0.12)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }
-      : { background: "rgba(251,113,133,0.1)", color: "#fb7185", border: "1px solid rgba(251,113,133,0.2)" };
+      ? { background: "#D3F9D8", color: "#2B8A3E", border: "2px solid #8CE99A", boxShadow: "0 2px 0 #8CE99A" }
+      : { background: "#FFE3E3", color: "#C92A2A", border: "2px solid #FFC9C9", boxShadow: "0 2px 0 #FFC9C9" };
   })();
 
   const icon =
@@ -618,16 +561,16 @@ function ChatBubble({
       : msg.type === "answer"
       ? msg.text === "yes" ? "✅" : msg.text === "no" ? "❌" : "🤔"
       : msg.type === "guess"
-      ? "🎯"
+      ? msg.correct ? "🎊" : "🎯"
       : "💬";
 
   return (
     <div
-      className="rounded-xl px-3 py-2 text-xs leading-relaxed animate-slide-in-right"
+      className="rounded-2xl px-4 py-2 text-sm font-bold animate-slide-in-right"
       style={{ ...style, animationDelay: `${Math.min(index * 20, 300)}ms` }}
     >
       {msg.type !== "system" && (
-        <span className="font-bold mr-1" style={{ color: isMe ? "#818cf8" : "#94a3b8" }}>
+        <span className="font-black mr-2" style={{ color: isMe ? "#1971C2" : "#495057" }}>
           {msg.fromName}:
         </span>
       )}

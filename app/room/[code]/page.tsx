@@ -103,36 +103,36 @@ function RoomBody({
   };
 
   return (
-    <main className="flex flex-1 flex-col items-center px-4 py-6">
+    <main className="flex flex-1 flex-col px-4 py-4 md:px-8">
       {/* Reconnecting banner */}
       {reconnecting && (
         <div
-          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 animate-slide-up"
-          style={{ background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.3)", color: "#fbbf24" }}
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 animate-slide-up"
+          style={{ background: "#FFF3CD", border: "2px solid #FFD43B", color: "#856404" }}
         >
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-blink" />
+          <span className="w-2 h-2 rounded-full animate-blink" style={{ background: "#FFD43B" }} />
           กำลังเชื่อมต่อใหม่...
         </div>
       )}
 
       {/* Header */}
-      <div className="w-full max-w-2xl mb-5 flex items-center justify-between">
+      <div className="w-full max-w-7xl mx-auto mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black gradient-text">WHO AM I?</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h1 className="text-2xl font-black gradient-text">WHO AM I? 🎭</h1>
+          <p className="text-xs mt-0.5" style={{ color: "#636E72" }}>
             ห้อง{" "}
-            <span className="font-mono font-bold text-slate-300">{room.code}</span>
+            <span className="font-mono font-bold" style={{ color: "#FF8C42" }}>{room.code}</span>
             {" "}·{" "}{playerName}
             {" "}·{" "}
             <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold"
               style={{
                 background:
                   room.status === "playing"
-                    ? "rgba(52,211,153,0.12)"
-                    : "rgba(129,140,248,0.12)",
+                    ? "rgba(81,207,102,0.15)"
+                    : "rgba(255,140,66,0.15)",
                 color:
-                  room.status === "playing" ? "#34d399" : "#818cf8",
+                  room.status === "playing" ? "#2B8A3E" : "#E8590C",
               }}
             >
               {statusLabel[room.status] ?? room.status}
@@ -141,8 +141,10 @@ function RoomBody({
         </div>
         <button
           onClick={() => window.location.assign("/")}
-          className="text-xs text-slate-600 hover:text-slate-300 transition-colors px-3 py-1.5 rounded-lg"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+          className="text-xs font-bold px-4 py-2 rounded-full transition-all"
+          style={{ background: "#F0F0F0", color: "#636E72", border: "1px solid #E0E0E0" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#E0E0E0"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#F0F0F0"; }}
         >
           ออก
         </button>
