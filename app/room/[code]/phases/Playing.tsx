@@ -471,35 +471,6 @@ export function Playing({
                   ⚠ ถ้าทาย จะหมดสิทธิ์ถามในรอบนี้ทันที
                 </p>
               )}
-
-              {/* Pass button */}
-              <button
-                id="btn-pass"
-                onClick={async () => {
-                  setLoading(true);
-                  setError("");
-                  try {
-                    await sendAction(room.code, playerId, { type: "pass" });
-                    onRefresh();
-                  } catch (e: unknown) {
-                    setError(e instanceof Error ? e.message : "error");
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading}
-                className="mt-3 w-full py-3 rounded-full text-sm font-bold transition-all disabled:opacity-50"
-                style={{
-                  background: "rgba(151,117,250,0.15)",
-                  border: "2px solid rgba(151,117,250,0.3)",
-                  color: "#c4b5fd",
-                }}
-                onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(2px)"; }}
-                onMouseUp={(e) => { e.currentTarget.style.transform = ""; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
-              >
-                ➡️ ผ่าน (ข้ามตา)
-              </button>
             </div>
           ) : (
             /* Not my turn, not waiting — just wait */
