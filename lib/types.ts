@@ -119,5 +119,8 @@ export type ActionPayload =
   | { type: "guess"; text: string }
   | { type: "pass" }
   | { type: "setMaxQuestions"; value: number }
+  | { type: "setRoundDuration"; value: number }
+  | { type: "setTotalRounds"; value: number }
+  | { type: "setTurnTimer"; value: number }
   | { type: "timeUp" }
   | { type: "turnTimeUp" };

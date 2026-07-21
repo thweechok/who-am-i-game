@@ -287,8 +287,22 @@ export function Playing({
                 {isMe ? (
                   <span className="text-5xl drop-shadow-lg">❓</span>
                 ) : imgUrl ? (
-                  <img src={imgUrl} alt="" className="w-full h-full object-cover"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                  <img src={imgUrl} alt={answer ?? ""} className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const el = e.currentTarget as HTMLImageElement;
+                      // Replace broken img with fallback text
+                      const parent = el.parentElement;
+                      if (parent) {
+                        parent.style.background = "linear-gradient(135deg, #6366f1, #8b5cf6)";
+                        el.style.display = "none";
+                        const fallback = document.createElement("span");
+                        fallback.className = "text-4xl font-black";
+                        fallback.style.color = "#e2e8f0";
+                        fallback.textContent = (answer ?? p.name ?? "?").charAt(0).toUpperCase();
+                        parent.appendChild(fallback);
+                      }
+                    }} />
                 ) : (
                   <span className="text-5xl">🤡</span>
                 )}
@@ -454,6 +468,39 @@ export function Playing({
               )}
             </div>
           )}
+
+          {/* ── Q&A History — inline question/answer log ── */}
+          {(() => {
+            const qaItems: { q: string; a: string; qBy: string }[] = [];
+            for (let i = 0; i < room.chat.length; i++) {
+              const msg = room.chat[i];
+              if (msg.type === "question") {
+                // Look for the next answer
+                const ans = room.chat.find((m, j) => j > i && m.type === "answer");
+                qaItems.push({
+                  q: msg.text,
+                  a: ans?.text ?? "⏳",
+                  qBy: msg.fromName,
+                });
+              }
+            }
+            if (qaItems.length === 0) return null;
+            return (
+              <div className="rounded-2xl p-4 space-y-2" style={{ ...cartoonCard, maxHeight: "220px", overflowY: "auto" }}>
+                <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "#7c6aab" }}>📋 ประวัติคำถาม</div>
+                {qaItems.map((item, i) => (
+                  <div key={i} className="rounded-xl px-3 py-2" style={{ background: "rgba(26,10,46,0.4)", borderLeft: "3px solid #4DACF7" }}>
+                    <div className="text-sm font-bold" style={{ color: "#74C0FC" }}>
+                      {item.qBy}: {item.q}
+                    </div>
+                    <div className="text-xs font-bold mt-1" style={{ color: "#c4b5fd" }}>
+                      → {item.a}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
           {/* Action panel */}
           <div style={cartoonCard} className="p-5 rounded-2xl">

@@ -251,6 +251,25 @@ export function applyAction(
     return { ok: true };
   }
 
+  if (payload.type === "setRoundDuration") {
+    if (room.hostId !== playerId) return { ok: false, error: "เฉพาะ host เท่านั้น" };
+    const secs = Math.max(60, Math.min(1800, Number(payload.value ?? 420)));
+    room.roundDurationSeconds = secs;
+    return { ok: true };
+  }
+
+  if (payload.type === "setTotalRounds") {
+    if (room.hostId !== playerId) return { ok: false, error: "เฉพาะ host เท่านั้น" };
+    room.totalRounds = Math.max(1, Math.min(10, Number(payload.value ?? 1)));
+    return { ok: true };
+  }
+
+  if (payload.type === "setTurnTimer") {
+    if (room.hostId !== playerId) return { ok: false, error: "เฉพาะ host เท่านั้น" };
+    room.turnTimerSeconds = Math.max(15, Math.min(120, Number(payload.value ?? 40)));
+    return { ok: true };
+  }
+
   // ──── TIME UP (works from any status with timer) ────
   if (payload.type === "timeUp") {
     if (room.status !== "playing") return { ok: false, error: "เกมไม่ได้กำลังเล่น" };

@@ -233,32 +233,125 @@ export function Lobby({
                   ⚙️ ตั้งค่าห้อง
                 </h2>
                 
-                <div className="mb-2">
-                  <p className="font-bold mb-3" style={{ color: colors.subtitle }}>จำนวนคำถามสูงสุดต่อตา</p>
-                  <div className="grid grid-cols-4 gap-3">
-                    {[3, 5, 8, 0].map((n) => {
-                      const label = n === 0 ? "∞" : `${n}`;
-                      const active = (room.maxQuestionsPerTurn ?? 5) === n;
+                {/* Round Duration */}
+                <div className="mb-4">
+                  <p className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.subtitle }}>⏱️ เวลาต่อรอบ (นาที)</p>
+                  <div className="flex gap-2 items-center">
+                    {[3, 5, 7, 10].map((m) => {
+                      const secs = m * 60;
+                      const active = (room.roundDurationSeconds ?? 420) === secs;
                       return (
-                        <button key={n} id={`btn-max-q-${n}`}
+                        <button key={m}
                           onClick={async () => {
-                            try {
-                              await sendAction(room.code, playerId, { type: "setMaxQuestions", value: n });
-                              onRefresh();
-                            } catch { /* ignore */ }
+                            try { await sendAction(room.code, playerId, { type: "setRoundDuration", value: secs }); onRefresh(); } catch {}
                           }}
-                          className="py-3 rounded-[12px] text-lg font-black transition-all active:scale-95"
+                          className="flex-1 py-3 rounded-xl text-lg font-black transition-all active:scale-95"
                           style={{
-                            background: active ? colors.primary : "rgba(26,10,46,0.5)",
-                            color: active ? "rgba(37,21,69,0.6)" : colors.subtitle,
-                            boxShadow: active ? "0 4px 0 #D97A3B" : "0 4px 0 #DEE2E6",
-                            marginBottom: "4px"
+                            background: active ? "#4DACF7" : "rgba(26,10,46,0.5)",
+                            color: active ? "#fff" : colors.subtitle,
+                            boxShadow: active ? "0 4px 0 #228BE6" : "0 4px 0 rgba(151,117,250,0.2)",
                           }}>
-                          {label}
+                          {m}
                         </button>
                       );
                     })}
+                    <input
+                      type="number" min={1} max={30} placeholder="กำหนดเอง"
+                      className="w-24 py-3 px-3 rounded-xl text-lg font-bold text-center"
+                      style={{ background: "rgba(26,10,46,0.5)", color: "#e2e8f0", border: "2px solid rgba(151,117,250,0.2)" }}
+                      onBlur={async (e) => {
+                        const v = Math.max(1, Math.min(30, parseInt(e.target.value) || 7));
+                        try { await sendAction(room.code, playerId, { type: "setRoundDuration", value: v * 60 }); onRefresh(); } catch {}
+                      }}
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter") {
+                          const v = Math.max(1, Math.min(30, parseInt((e.target as HTMLInputElement).value) || 7));
+                          try { await sendAction(room.code, playerId, { type: "setRoundDuration", value: v * 60 }); onRefresh(); } catch {}
+                        }
+                      }}
+                    />
                   </div>
+                  <p className="text-xs mt-1 font-bold" style={{ color: "#7c6aab" }}>ตั้งอยู่: {Math.floor((room.roundDurationSeconds ?? 420) / 60)} นาที</p>
+                </div>
+
+                {/* Total Rounds */}
+                <div className="mb-4">
+                  <p className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.subtitle }}>🎮 จำนวนรอบ</p>
+                  <div className="flex gap-2 items-center">
+                    {[1, 3, 5].map((n) => {
+                      const active = (room.totalRounds ?? 1) === n;
+                      return (
+                        <button key={n}
+                          onClick={async () => {
+                            try { await sendAction(room.code, playerId, { type: "setTotalRounds", value: n }); onRefresh(); } catch {}
+                          }}
+                          className="flex-1 py-3 rounded-xl text-lg font-black transition-all active:scale-95"
+                          style={{
+                            background: active ? "#51CF66" : "rgba(26,10,46,0.5)",
+                            color: active ? "#fff" : colors.subtitle,
+                            boxShadow: active ? "0 4px 0 #37B24D" : "0 4px 0 rgba(151,117,250,0.2)",
+                          }}>
+                          {n}
+                        </button>
+                      );
+                    })}
+                    <input
+                      type="number" min={1} max={10} placeholder="อื่นๆ"
+                      className="w-24 py-3 px-3 rounded-xl text-lg font-bold text-center"
+                      style={{ background: "rgba(26,10,46,0.5)", color: "#e2e8f0", border: "2px solid rgba(151,117,250,0.2)" }}
+                      onBlur={async (e) => {
+                        const v = Math.max(1, Math.min(10, parseInt(e.target.value) || 1));
+                        try { await sendAction(room.code, playerId, { type: "setTotalRounds", value: v }); onRefresh(); } catch {}
+                      }}
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter") {
+                          const v = Math.max(1, Math.min(10, parseInt((e.target as HTMLInputElement).value) || 1));
+                          try { await sendAction(room.code, playerId, { type: "setTotalRounds", value: v }); onRefresh(); } catch {}
+                        }
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs mt-1 font-bold" style={{ color: "#7c6aab" }}>ตั้งอยู่: {room.totalRounds ?? 1} รอบ</p>
+                </div>
+
+                {/* Turn Timer */}
+                <div className="mb-2">
+                  <p className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.subtitle }}>⏳ เวลาต่อตา (วินาที)</p>
+                  <div className="flex gap-2 items-center">
+                    {[30, 40, 60].map((s) => {
+                      const active = (room.turnTimerSeconds ?? 40) === s;
+                      return (
+                        <button key={s}
+                          onClick={async () => {
+                            try { await sendAction(room.code, playerId, { type: "setTurnTimer", value: s }); onRefresh(); } catch {}
+                          }}
+                          className="flex-1 py-3 rounded-xl text-lg font-black transition-all active:scale-95"
+                          style={{
+                            background: active ? "#FF8C42" : "rgba(26,10,46,0.5)",
+                            color: active ? "#fff" : colors.subtitle,
+                            boxShadow: active ? "0 4px 0 #D66D24" : "0 4px 0 rgba(151,117,250,0.2)",
+                          }}>
+                          {s}s
+                        </button>
+                      );
+                    })}
+                    <input
+                      type="number" min={15} max={120} placeholder="อื่นๆ"
+                      className="w-24 py-3 px-3 rounded-xl text-lg font-bold text-center"
+                      style={{ background: "rgba(26,10,46,0.5)", color: "#e2e8f0", border: "2px solid rgba(151,117,250,0.2)" }}
+                      onBlur={async (e) => {
+                        const v = Math.max(15, Math.min(120, parseInt(e.target.value) || 40));
+                        try { await sendAction(room.code, playerId, { type: "setTurnTimer", value: v }); onRefresh(); } catch {}
+                      }}
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter") {
+                          const v = Math.max(15, Math.min(120, parseInt((e.target as HTMLInputElement).value) || 40));
+                          try { await sendAction(room.code, playerId, { type: "setTurnTimer", value: v }); onRefresh(); } catch {}
+                        }
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs mt-1 font-bold" style={{ color: "#7c6aab" }}>ตั้งอยู่: {room.turnTimerSeconds ?? 40} วินาที</p>
                 </div>
               </div>
 
