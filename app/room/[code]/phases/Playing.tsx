@@ -4,6 +4,33 @@ import { useCallback, useEffect, useRef, useState, memo } from "react";
 import type { PublicRoomState, ChatMessage } from "@/lib/types";
 import { sendAction, getAIAnswer } from "@/lib/api-client";
 
+/* ── PlayerImage — tries proxy, falls back to letter ── */
+function PlayerImage({ src, fallbackText }: { src: string; fallbackText: string }) {
+  const [failed, setFailed] = useState(false);
+  const proxied = `/api/img?url=${encodeURIComponent(src)}`;
+
+  if (failed) {
+    return (
+      <div className="w-full h-full flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+        <span className="text-4xl font-black" style={{ color: "#e2e8f0" }}>
+          {fallbackText.charAt(0).toUpperCase()}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={proxied}
+      alt={fallbackText}
+      className="w-full h-full object-cover"
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 /* ── Countdown Timer — own state so it never re-renders Playing ─────────── */
 const CountdownTimer = memo(function CountdownTimer({
   roundStartedAt,
@@ -281,30 +308,19 @@ export function Playing({
               <div className="w-full aspect-square rounded-xl overflow-hidden flex items-center justify-center mb-3"
                 style={{
                   border: isCurrent ? "4px solid #FF8C42" : "3px solid rgba(151,117,250,0.3)",
-                  background: isMe ? "linear-gradient(135deg, #7C3AED, #D946EF)" : "rgba(26,10,46,0.8)",
+                  background: isMe ? "linear-gradient(135deg, #7C3AED, #D946EF)"
+                    : imgUrl ? "rgba(26,10,46,0.8)"
+                    : "linear-gradient(135deg, #6366f1, #8b5cf6)",
                 }}
               >
                 {isMe ? (
                   <span className="text-5xl drop-shadow-lg">❓</span>
                 ) : imgUrl ? (
-                  <img src={imgUrl} alt={answer ?? ""} className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      const el = e.currentTarget as HTMLImageElement;
-                      // Replace broken img with fallback text
-                      const parent = el.parentElement;
-                      if (parent) {
-                        parent.style.background = "linear-gradient(135deg, #6366f1, #8b5cf6)";
-                        el.style.display = "none";
-                        const fallback = document.createElement("span");
-                        fallback.className = "text-4xl font-black";
-                        fallback.style.color = "#e2e8f0";
-                        fallback.textContent = (answer ?? p.name ?? "?").charAt(0).toUpperCase();
-                        parent.appendChild(fallback);
-                      }
-                    }} />
+                  <PlayerImage src={imgUrl} fallbackText={answer ?? p.name ?? "?"} />
                 ) : (
-                  <span className="text-5xl">🤡</span>
+                  <span className="text-4xl font-black" style={{ color: "#e2e8f0" }}>
+                    {(answer ?? p.name ?? "?").charAt(0).toUpperCase()}
+                  </span>
                 )}
               </div>
               {/* Answer name */}
