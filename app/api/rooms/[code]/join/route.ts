@@ -29,15 +29,8 @@ export async function POST(
   );
 
   if (existing) {
-    // Allow reconnect only when game is already in progress (not lobby)
-    if (room.status !== "lobby") {
-      return Response.json({ playerId: existing.id, reconnected: true });
-    }
-    // In lobby: reject duplicate name
-    return Response.json(
-      { error: `ชื่อ "${name}" มีคนใช้แล้ว — ลองใช้ชื่ออื่น` },
-      { status: 400 }
-    );
+    // Allow reconnect — same name means same person rejoining
+    return Response.json({ playerId: existing.id, reconnected: true });
   }
 
   const isSpectator = body.isSpectator === true;
