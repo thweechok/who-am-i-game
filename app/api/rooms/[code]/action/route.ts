@@ -38,6 +38,16 @@ export async function POST(
     return Response.json({ ok: true });
   }
 
+  // Settings actions — work in any phase (lobby, setup, playing)
+  if (rawType === "setRoundDuration" || rawType === "setTotalRounds" || rawType === "setTurnTimer") {
+    const val = Number(body.value ?? 0);
+    const payload: ActionPayload = { type: rawType, value: val };
+    const result = applyAction(room, playerId, payload);
+    if (!result.ok) return Response.json({ error: result.error }, { status: 400 });
+    await saveRoom(room);
+    return Response.json({ ok: true });
+  }
+
   let payload: ActionPayload;
   if (rawType === "ask") {
     payload = { type: "ask", text: rawText };
@@ -49,6 +59,8 @@ export async function POST(
     payload = { type: "pass" };
   } else if (rawType === "timeUp") {
     payload = { type: "timeUp" };
+  } else if (rawType === "turnTimeUp") {
+    payload = { type: "turnTimeUp" };
   } else {
     return Response.json({ error: "action ไม่ถูกต้อง" }, { status: 400 });
   }
