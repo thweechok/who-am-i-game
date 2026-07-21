@@ -56,11 +56,22 @@ export async function POST(
     if (need.length === 0) {
       return Response.json({ ok: true, assigned: 0, source: "none" });
     }
-    const { answers, source } = await generateAnswers({
-      topic,
-      count: need.length,
-      difficulty,
-    });
+    let answers: string[];
+    let source: string;
+    try {
+      const result = await generateAnswers({
+        topic,
+        count: need.length,
+        difficulty,
+      });
+      answers = result.answers;
+      source = result.source;
+    } catch (err) {
+      return Response.json(
+        { error: "AI ไม่สามารถสร้างคำตอบได้ — ลองใหม่อีกครั้ง" },
+        { status: 500 }
+      );
+    }
     // shuffle so mapping isn't predictable
     const pool = [...answers].sort(() => Math.random() - 0.5);
     need.forEach((p, i) => {

@@ -131,7 +131,7 @@ export function Setup({
   const activePlayers  = room.players.filter(p => !p.isSpectator);
   // BUG-22 fix: own answer is in room.myAnswer (not room.answers) due to toPublic stripping it
   const readyCount     = activePlayers.filter(p =>
-    p.id === playerId ? room.myAnswer !== null : !!room.answers[p.id]
+    p.id === playerId ? room.myAnswerAssigned : !!room.answers[p.id]
   ).length;
   const needAnswer     = activePlayers.filter(p =>
     p.id === playerId ? room.myAnswer === null : !room.answers[p.id]
@@ -178,14 +178,14 @@ export function Setup({
           <span className="text-sm font-black" style={{ color: "#FF8C42" }}>{readyCount}/{activePlayers.length} คน</span>
         </div>
         
-        <div className="h-4 rounded-full overflow-hidden mb-4" style={{ backgroundColor: "#F1F2F6", border: "1px solid #DFE6E9" }}>
+        <div className="h-4 rounded-full overflow-hidden mb-4" style={{ backgroundColor: "rgba(37,21,69,0.5)", border: "1px solid #DFE6E9" }}>
           <div className={`h-full rounded-full transition-all duration-500 ${progressPct === 100 ? 'progress-shimmer-full' : 'progress-shimmer'}`}
             style={{ width: `${progressPct}%`, background: progressPct === 0 ? "transparent" : undefined }} />
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {activePlayers.map(p => {
-            const isReady = p.id === playerId ? room.myAnswer !== null : !!room.answers[p.id];
+            const isReady = p.id === playerId ? room.myAnswerAssigned : !!room.answers[p.id];
             return (
               <div key={p.id} className="p-2 rounded-xl text-center flex flex-col justify-center shadow-sm" 
                 style={{ backgroundColor: "rgba(37,21,69,0.6)", border: isReady ? "2px solid #51CF66" : "1px solid #DFE6E9" }}>
@@ -206,7 +206,7 @@ export function Setup({
           <span className="text-lg font-black" style={{ color: "#e2e8f0" }}>
             สุ่มหัวข้อด้วย AI
           </span>
-          {!amHost && <span className="ml-auto text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: "#F1F2F6", color: "#a89cc8" }}>👁️ ดูเท่านั้น</span>}
+          {!amHost && <span className="ml-auto text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: "rgba(37,21,69,0.5)", color: "#a89cc8" }}>👁️ ดูเท่านั้น</span>}
         </div>
 
         {amHost ? (
@@ -224,7 +224,7 @@ export function Setup({
                       boxShadow: "0 4px 0 #2A8CD8",
                       border: "none",
                     } : {
-                      backgroundColor: "#F8F9FA",
+                      backgroundColor: "rgba(37,21,69,0.4)",
                       color: "#a89cc8",
                       border: "1px solid #DFE6E9",
                     }}>
@@ -245,7 +245,7 @@ export function Setup({
                       onClick={() => { setSelectedTopic(topic.value); setUseCustom(false); }}
                       className="p-3 flex flex-col items-center justify-center gap-2 text-center rounded-xl topic-btn cartoon-press"
                       style={isActive ? {
-                        backgroundColor: "#FFF4ED",
+                        backgroundColor: "rgba(255,140,66,0.12)",
                         border: "2px solid #FF8C42",
                         color: "#FF8C42",
                       } : {
@@ -263,11 +263,11 @@ export function Setup({
                 <button onClick={() => setUseCustom(true)}
                   className="p-3 flex flex-col items-center justify-center gap-2 text-center rounded-xl topic-btn cartoon-press"
                   style={useCustom ? {
-                    backgroundColor: "#FFF4ED",
+                    backgroundColor: "rgba(255,140,66,0.12)",
                     border: "2px solid #FF8C42",
                     color: "#FF8C42",
                   } : {
-                    backgroundColor: "#FAFAFA",
+                    backgroundColor: "rgba(37,21,69,0.3)",
                     border: "2px dashed #DFE6E9",
                     color: "#a89cc8",
                   }}>
@@ -279,7 +279,7 @@ export function Setup({
                 <input value={customTopic} onChange={e => setCustomTopic(e.target.value)}
                   placeholder="เช่น นักร้องไทยยุค 90..." autoFocus maxLength={80}
                   className="mt-3 w-full px-4 py-3 text-sm font-semibold rounded-xl outline-none transition-all focus:ring-2 focus:ring-orange-300"
-                  style={{ backgroundColor: "#F8F9FA", border: "2px solid #FF8C42", color: "#e2e8f0" }} />
+                  style={{ backgroundColor: "rgba(37,21,69,0.4)", border: "2px solid #FF8C42", color: "#e2e8f0" }} />
               )}
             </div>
 
@@ -309,7 +309,7 @@ export function Setup({
             {/* AI button */}
             {aiDone && (
               <div className="px-4 py-3 text-sm text-center font-bold rounded-xl"
-                style={{ backgroundColor: "#E3FAEA", color: "#3BAA4C", border: "2px solid #51CF66" }}>
+                style={{ backgroundColor: "rgba(81,207,102,0.15)", color: "#3BAA4C", border: "2px solid #51CF66" }}>
                 ✅ สุ่มคำตอบให้ทุกคนแล้ว!
               </div>
             )}
@@ -331,7 +331,7 @@ export function Setup({
             <p className="text-sm font-bold" style={{ color: "#a89cc8" }}>เฉพาะเจ้าของห้องเท่านั้นที่สุ่มคำตอบได้</p>
             {room.topic && (
               <div className="mt-4 inline-block px-6 py-4 rounded-xl shadow-sm"
-                style={{ backgroundColor: "#FFF4ED", border: "2px solid #FFCDAD" }}>
+                style={{ backgroundColor: "rgba(255,140,66,0.12)", border: "2px solid #FFCDAD" }}>
                 <p className="text-xs font-bold mb-1" style={{ color: "#D96A25" }}>หัวข้อที่เลือก</p>
                 <p className="text-lg font-black" style={{ color: "#FF8C42" }}>{room.topic}</p>
               </div>
@@ -343,7 +343,7 @@ export function Setup({
       {/* Error */}
       {error && (
         <div className="px-5 py-4 text-sm font-bold rounded-xl"
-          style={{ backgroundColor: "#FFEDED", color: "#D32F2F", border: "2px solid #FF5252" }}>
+          style={{ backgroundColor: "rgba(255,107,107,0.15)", color: "#D32F2F", border: "2px solid #FF5252" }}>
           ⚠️ {error}
         </div>
       )}

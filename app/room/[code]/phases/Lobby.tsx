@@ -93,7 +93,7 @@ function PlayerRow({
           )}
           {isHost && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" 
-              style={{ background: "#FFF3CD", color: "#856404" }}>
+              style={{ background: "rgba(255,212,59,0.15)", color: "#856404" }}>
               👑 Host
             </span>
           )}
@@ -195,7 +195,7 @@ export function Lobby({
               {/* Empty slots */}
               {Array.from({ length: Math.max(0, 6 - activePlayers.length) }).map((_, i) => (
                 <div key={`empty-${i}`} className="flex items-center gap-3 px-4 py-3 mb-2 rounded-[12px]"
-                  style={{ border: "2px dashed rgba(151,117,250,0.2)", background: "#F8F9FA" }}>
+                  style={{ border: "2px dashed rgba(151,117,250,0.2)", background: "rgba(37,21,69,0.4)" }}>
                   <div className="w-10 h-10 rounded-full bg-gray-200" />
                   <span className="text-sm font-bold text-gray-400">รอผู้เล่น...</span>
                 </div>
@@ -212,7 +212,7 @@ export function Lobby({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {spectatorPlayers.map(p => (
-                  <div key={p.id} className="flex items-center gap-2 px-3 py-2 rounded-[8px]" style={{ background: "#F8F9FA", border: "1px solid rgba(151,117,250,0.15)" }}>
+                  <div key={p.id} className="flex items-center gap-2 px-3 py-2 rounded-[8px]" style={{ background: "rgba(37,21,69,0.4)", border: "1px solid rgba(151,117,250,0.15)" }}>
                     <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs text-white font-bold">
                       {p.name.charAt(0).toUpperCase()}
                     </div>

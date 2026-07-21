@@ -182,7 +182,7 @@ export function Playing({
       />
 
       {/* ── Player Answer Cards ── */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(room.players.filter(p=>!p.isSpectator).length, 6)}, 1fr)` }}>
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
         {room.players.filter(p => !p.isSpectator).map((p) => {
           const isMe = p.id === playerId;
           const isCurrent = p.id === room.currentTurnId;
@@ -272,7 +272,7 @@ export function Playing({
 
           {/* Waiting for answer banner */}
           {room.waitingForAnswer && lastQuestion && !isMyTurn && (
-            <div className="p-4 rounded-2xl" style={{ ...cartoonCard, border: "2px solid #FFD43B", background: "#FFFDF0" }}>
+            <div className="p-4 rounded-2xl" style={{ ...cartoonCard, border: "2px solid #FFD43B", background: "rgba(255,212,59,0.08)" }}>
               <div className="text-xs font-black mb-2" style={{ color: "#F59F00" }}>
                 ⏳ รอคำตอบ
               </div>
@@ -339,7 +339,7 @@ export function Playing({
                 disabled={aiLoading || loading}
                 className="mt-4 w-full py-3 rounded-full text-sm font-bold transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
                 style={{
-                  background: "#E7F5FF",
+                  background: "rgba(77,172,247,0.12)",
                   border: "2px solid #74C0FC",
                   color: "#1C7ED6",
                   boxShadow: "0 4px 0 #74C0FC",
@@ -359,7 +359,7 @@ export function Playing({
               {aiResult && (
                 <div
                   className="mt-3 rounded-xl p-4 animate-slide-up"
-                  style={{ background: "#E7F5FF", border: "2px solid #74C0FC" }}
+                  style={{ background: "rgba(77,172,247,0.12)", border: "2px solid #74C0FC" }}
                 >
                   <div className="flex items-start gap-3">
                     <span className="text-2xl flex-shrink-0">🤖</span>
@@ -443,7 +443,7 @@ export function Playing({
               {mode === "guess" && (
                 <p
                   className="mt-3 text-xs font-bold text-center rounded-xl px-3 py-2 animate-fade-in"
-                  style={{ background: "#FFF5F5", color: "#E03131", border: "2px dashed #FF8787" }}
+                  style={{ background: "rgba(255,107,107,0.1)", color: "#E03131", border: "2px dashed #FF8787" }}
                 >
                   ⚠ ถ้าทาย จะหมดสิทธิ์ถามในรอบนี้ทันที
                 </p>
@@ -500,11 +500,11 @@ function ChatPanel({
     >
       <div
         className="px-4 py-3 text-sm font-black text-center"
-        style={{ borderBottom: "2px solid #A5D8FF", color: "#FF8C42", background: "#E7F5FF", borderTopLeftRadius: "14px", borderTopRightRadius: "14px" }}
+        style={{ borderBottom: "2px solid #A5D8FF", color: "#FF8C42", background: "rgba(77,172,247,0.12)", borderTopLeftRadius: "14px", borderTopRightRadius: "14px" }}
       >
         💬 แชต
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-2" style={{ background: "#F8F9FA", borderBottomLeftRadius: "14px", borderBottomRightRadius: "14px" }}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-2" style={{ background: "rgba(37,21,69,0.4)", borderBottomLeftRadius: "14px", borderBottomRightRadius: "14px" }}>
         {chat.map((m, i) => (
           <ChatBubble key={m.id} msg={m} isMe={m.fromId === playerId} index={i} />
         ))}
@@ -526,7 +526,7 @@ function ChatBubble({
   const style = (() => {
     if (msg.type === "system") {
       return {
-        background: "#E9ECEF",
+        background: "rgba(255,255,255,0.08)",
         color: "#495057",
         border: "1px solid #DEE2E6",
         boxShadow: "0 2px 0 #DEE2E6"
@@ -534,7 +534,7 @@ function ChatBubble({
     }
     if (msg.type === "question") {
       return {
-        background: isMe ? "#D0EBFF" : "#E7F5FF",
+        background: isMe ? "rgba(77,172,247,0.2)" : "rgba(77,172,247,0.12)",
         color: "#1C7ED6",
         border: `2px solid ${isMe ? "#74C0FC" : "#A5D8FF"}`,
         boxShadow: `0 2px 0 ${isMe ? "#74C0FC" : "#A5D8FF"}`
@@ -542,16 +542,16 @@ function ChatBubble({
     }
     if (msg.type === "answer") {
       if (msg.text === "yes") {
-        return { background: "#D3F9D8", color: "#2B8A3E", border: "2px solid #8CE99A", boxShadow: "0 2px 0 #8CE99A" };
+        return { background: "rgba(81,207,102,0.2)", color: "#2B8A3E", border: "2px solid #8CE99A", boxShadow: "0 2px 0 #8CE99A" };
       } else if (msg.text === "no") {
         return { background: "rgba(255,107,107,0.15)", color: "#C92A2A", border: "2px solid rgba(255,107,107,0.3)", boxShadow: "0 2px 0 #FFC9C9" };
       } else {
-        return { background: "#FFF3BF", color: "#E67700", border: "2px solid #FFEC99", boxShadow: "0 2px 0 #FFEC99" };
+        return { background: "rgba(255,212,59,0.2)", color: "#E67700", border: "2px solid #FFEC99", boxShadow: "0 2px 0 #FFEC99" };
       }
     }
     // guess
     return msg.correct
-      ? { background: "#D3F9D8", color: "#2B8A3E", border: "2px solid #8CE99A", boxShadow: "0 2px 0 #8CE99A" }
+      ? { background: "rgba(81,207,102,0.2)", color: "#2B8A3E", border: "2px solid #8CE99A", boxShadow: "0 2px 0 #8CE99A" }
       : { background: "rgba(255,107,107,0.15)", color: "#C92A2A", border: "2px solid rgba(255,107,107,0.3)", boxShadow: "0 2px 0 #FFC9C9" };
   })();
 

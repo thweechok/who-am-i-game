@@ -87,7 +87,7 @@ export function Ended({
         className="relative p-7 text-center overflow-hidden"
         style={{
           ...cardStyle,
-          background: iWon ? "#FFF9DB" : "rgba(37,21,69,0.6)",
+          background: iWon ? "rgba(255,212,59,0.12)" : "rgba(37,21,69,0.6)",
           border: iWon ? "2px solid #FFD43B" : "2px solid rgba(151,117,250,0.2)",
           boxShadow: iWon ? "0 8px 24px rgba(255,212,59,0.2)" : cardStyle.boxShadow,
         }}
@@ -122,7 +122,7 @@ export function Ended({
           <div
             className="relative mt-3 inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-black animate-pulse-success"
             style={{
-              background: "#E8F5E9",
+              background: "rgba(81,207,102,0.12)",
               color: "#51CF66",
               border: "2px solid #51CF66",
             }}
@@ -145,7 +145,7 @@ export function Ended({
                 key={p.id}
                 className="flex items-center gap-4 rounded-[16px] px-4 py-3 animate-slide-in-right"
                 style={{
-                  background: p.id === playerId ? "#FFF3E0" : "#F8F9FA",
+                  background: p.id === playerId ? "rgba(255,140,66,0.1)" : "rgba(37,21,69,0.4)",
                   border: p.id === playerId ? "2px solid #FF8C42" : "2px solid rgba(151,117,250,0.2)",
                   animationDelay: `${i * 80}ms`,
                 }}
@@ -203,7 +203,7 @@ export function Ended({
                   key={fid}
                   className="flex items-center justify-between rounded-[16px] px-4 py-3"
                   style={{
-                    background: "#E8F5E9",
+                    background: "rgba(81,207,102,0.12)",
                     border: "2px solid #51CF66",
                   }}
                 >
@@ -234,15 +234,15 @@ export function Ended({
         <div className="space-y-3">
           {room.players.filter(p => !p.isSpectator).map((p, i) => {
             const ans = p.id === playerId
-              ? (room.myAnswer ?? room.allAnswers[p.id])
-              : room.allAnswers[p.id] ?? room.answers[p.id];
+              ? (room.myAnswer ?? room.allAnswers?.[p.id])
+              : room.allAnswers?.[p.id] ?? room.answers?.[p.id];
             const imgUrl = room.answerImages?.[p.id];
             return (
               <div
                 key={p.id}
                 className="flex items-center gap-4 rounded-[16px] px-4 py-3 animate-fade-in"
                 style={{
-                  background: "#F8F9FA",
+                  background: "rgba(37,21,69,0.4)",
                   border: "2px solid rgba(151,117,250,0.2)",
                   animationDelay: `${i * 60}ms`,
                 }}

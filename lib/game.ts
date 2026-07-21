@@ -94,9 +94,9 @@ export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
     topic: room.topic,
     players: room.players,
     answers: others,
-    // During playing phase, HIDE own answer — the whole game is guessing!
-    // Only reveal in setup (so they know it's assigned) and ended (results)
-    myAnswer: room.status === "playing" ? null : (room.answers[viewerId] ?? null),
+    // HIDE own answer during setup+playing — only reveal when round ends
+    myAnswer: room.status === "ended" ? (room.answers[viewerId] ?? null) : null,
+    myAnswerAssigned: !!room.answers[viewerId],
     turnOrder: room.turnOrder,
     currentTurnIdx: room.currentTurnIdx,
     currentTurnId,
@@ -240,6 +240,7 @@ export function applyAction(
 
   // ──── TIME UP (works from any status with timer) ────
   if (payload.type === "timeUp") {
+    if (room.status !== "playing") return { ok: false, error: "เกมไม่ได้กำลังเล่น" };
     const startedAt = room.roundStartedAt ?? 0;
     const durMs = (room.roundDurationSeconds ?? 420) * 1000;
     if (startedAt > 0 && Date.now() - startedAt >= durMs) {
@@ -329,6 +330,9 @@ export function applyAction(
 
   // ──── GUESS ────
   if (payload.type === "guess") {
+    if (playerId !== currentTurnId) {
+      return { ok: false, error: "ยังไม่ถึงตาคุณ" };
+    }
     if (player.guessedThisRound) {
       return { ok: false, error: "คุณทายไปแล้วครั้งหนึ่งรอบนี้" };
     }
@@ -456,6 +460,8 @@ function endRound(room: RoomState) {
 /** Start a fresh round: new answers required (host re-runs setup) or reuse. */
 export function startNextRound(room: RoomState): { ok: boolean; error?: string } {
   if (room.status !== "ended") return { ok: false, error: "ยังไม่จบรอบ" };
+  const active = room.players.filter(p => !p.isSpectator);
+  if (active.length < 2) return { ok: false, error: "ผู้เล่นไม่พอ (ต้องอย่างน้อย 2 คน)" };
   room.status = "setup";
   room.round += 1;
   room.finishers = [];

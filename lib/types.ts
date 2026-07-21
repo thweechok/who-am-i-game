@@ -76,6 +76,7 @@ export interface PublicRoomState {
   /** image URLs for answers */
   answerImages: Record<string, string>;
   myAnswer: string | null;
+  myAnswerAssigned: boolean;
   turnOrder: string[];
   currentTurnIdx: number;
   currentTurnId: string | null;
