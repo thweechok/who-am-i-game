@@ -378,25 +378,30 @@ export function Playing({
 
           {/* ── VOTING PANEL — shows when a question is pending ── */}
           {room.waitingForAnswer && room.currentQuestion && (
-            <div className="p-5 rounded-2xl animate-slide-up" style={{ ...cartoonCard, border: "2px solid rgba(77,172,247,0.4)", background: "rgba(77,172,247,0.08)" }}>
-              <div className="text-xs font-black mb-1" style={{ color: "#74C0FC" }}>
-                ❓ คำถามจาก {room.players.find(p => p.id === room.currentTurnId)?.name}
+            <div className="p-6 rounded-2xl animate-slide-up" style={{
+              background: "linear-gradient(135deg, rgba(77,172,247,0.15), rgba(151,117,250,0.12))",
+              border: "3px solid #4DACF7",
+              boxShadow: "0 0 30px rgba(77,172,247,0.25), 0 8px 32px rgba(0,0,0,0.3)",
+            }}>
+              <div className="text-sm font-black mb-2 flex items-center gap-2" style={{ color: "#74C0FC" }}>
+                <span className="w-7 h-7 rounded-full flex items-center justify-center text-base" style={{ background: "#4DACF7", color: "#fff" }}>❓</span>
+                คำถามจาก {room.players.find(p => p.id === room.currentTurnId)?.name}
               </div>
-              <div className="text-lg font-black mb-4" style={{ color: "#ffffff" }}>
+              <div className="text-2xl font-black mb-5 leading-snug" style={{ color: "#ffffff", textShadow: "0 2px 8px rgba(77,172,247,0.3)" }}>
                 {room.currentQuestion}
               </div>
 
               {/* Show all voters and their status */}
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2 mb-5">
                 {eligibleVoters.map(p => {
                   const vote = room.votes[p.id];
                   return (
-                    <div key={p.id} className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: vote ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)" }}>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black" style={{ background: vote ? (vote === "yes" ? "rgba(81,207,102,0.2)" : vote === "no" ? "rgba(255,107,107,0.2)" : "rgba(255,212,59,0.2)") : "rgba(151,117,250,0.15)", color: vote ? "#fff" : "#a89cc8" }}>
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-2.5 rounded-xl" style={{ background: vote ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)", border: vote ? "1px solid rgba(255,255,255,0.1)" : "1px solid transparent" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-base font-black" style={{ background: vote ? (vote === "yes" ? "#51CF66" : vote === "no" ? "#FF6B6B" : "#FFD43B") : "rgba(151,117,250,0.2)", color: vote ? "#1a0a2e" : "#a89cc8" }}>
                         {vote ? (vote === "yes" ? "✅" : vote === "no" ? "❌" : "🤔") : "⏳"}
                       </div>
-                      <span className="font-bold text-sm" style={{ color: "#e2e8f0" }}>{p.name}</span>
-                      <span className="ml-auto text-xs font-bold" style={{ color: vote ? (vote === "yes" ? "#51CF66" : vote === "no" ? "#FF6B6B" : "#FFD43B") : "#7c6aab" }}>
+                      <span className="font-bold text-base" style={{ color: "#e2e8f0" }}>{p.name}</span>
+                      <span className="ml-auto text-sm font-black" style={{ color: vote ? (vote === "yes" ? "#51CF66" : vote === "no" ? "#FF6B6B" : "#FFD43B") : "#7c6aab" }}>
                         {vote ? (vote === "yes" ? "ใช่" : vote === "no" ? "ไม่ใช่" : "ไม่รู้") : "รอตอบ..."}
                       </span>
                     </div>
@@ -418,11 +423,11 @@ export function Playing({
                       id={`btn-vote-${val}`}
                       onClick={() => handleAnswer(val)}
                       disabled={loading}
-                      className="py-3 rounded-xl text-sm font-black transition-all active:scale-95 disabled:opacity-50"
-                      style={{ background: bg, color: "#1a0a2e", boxShadow: `0 4px 0 ${shadow}`, border: "none" }}
-                      onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(4px)"; e.currentTarget.style.boxShadow = "none"; }}
-                      onMouseUp={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 4px 0 ${shadow}`; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 4px 0 ${shadow}`; }}
+                      className="py-4 rounded-xl text-base font-black transition-all active:scale-95 disabled:opacity-50"
+                      style={{ background: bg, color: "#1a0a2e", boxShadow: `0 5px 0 ${shadow}`, border: "none" }}
+                      onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(5px)"; e.currentTarget.style.boxShadow = "none"; }}
+                      onMouseUp={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 5px 0 ${shadow}`; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 5px 0 ${shadow}`; }}
                     >
                       {label}
                     </button>
@@ -434,10 +439,10 @@ export function Playing({
                   id="btn-ai-answer"
                   onClick={handleAIAnswer}
                   disabled={aiLoading || loading}
-                  className="mt-3 w-full py-3 rounded-full text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="mt-4 w-full py-3.5 rounded-full text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
-                    background: "rgba(77,172,247,0.12)",
-                    border: "2px solid rgba(116,192,252,0.3)",
+                    background: "rgba(77,172,247,0.15)",
+                    border: "2px solid rgba(116,192,252,0.4)",
                     color: "#74C0FC",
                   }}
                 >
@@ -471,14 +476,14 @@ export function Playing({
 
               {/* Already voted indicator */}
               {myVote && !isMyTurn && (
-                <div className="text-center py-2 text-sm font-bold" style={{ color: "#51CF66" }}>
+                <div className="text-center py-3 text-base font-black rounded-xl mt-2" style={{ color: "#51CF66", background: "rgba(81,207,102,0.1)", border: "2px solid rgba(81,207,102,0.2)" }}>
                   ✅ คุณตอบแล้ว — รอคนอื่น
                 </div>
               )}
 
               {/* Asker sees voting progress */}
               {isMyTurn && (
-                <div className="text-center py-2 text-sm font-bold" style={{ color: "#74C0FC" }}>
+                <div className="text-center py-3 text-base font-black rounded-xl mt-2" style={{ color: "#74C0FC", background: "rgba(77,172,247,0.1)", border: "2px solid rgba(77,172,247,0.2)" }}>
                   ⏳ รอทุกคนตอบ ({Object.keys(room.votes).length}/{eligibleVoters.length})
                 </div>
               )}
