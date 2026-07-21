@@ -43,6 +43,8 @@ export function emptyRoom(code: string, host: Player): RoomState {
     ],
     finishers: [],
     waitingForAnswer: false,
+    currentQuestion: null,
+    votes: {},
     difficulty: "medium",
     maxQuestionsPerTurn: 5,
     questionsThisTurn: 0,
@@ -103,7 +105,9 @@ export function toPublic(room: RoomState, viewerId: string): PublicRoomState {
     round: room.round,
     chat: room.chat,
     finishers: room.finishers,
-    waitingForAnswer: room.waitingForAnswer ?? false,
+    waitingForAnswer: room.waitingForAnswer,
+    currentQuestion: room.currentQuestion,
+    votes: room.votes,
     difficulty: room.difficulty ?? "medium",
     maxQuestionsPerTurn: room.maxQuestionsPerTurn ?? 5,
     questionsThisTurn: room.questionsThisTurn ?? 0,
@@ -173,7 +177,7 @@ export function beginPlaying(room: RoomState): { ok: boolean; error?: string } {
   room.status = "playing";
   room.round = 1;
   room.currentTurnIdx = 0;
-  room.waitingForAnswer = false;
+  room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
   room.questionsThisTurn = 0;
   room.roundStartedAt = Date.now();
   room.turnOrder = room.players.filter(p => !p.isSpectator).map((p) => p.id);
@@ -256,7 +260,7 @@ export function applyAction(
 
   // Migrate old rooms that may not have this field
   if (room.waitingForAnswer === undefined) {
-    room.waitingForAnswer = false;
+    room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
   }
 
   const player = findPlayer(room, playerId);
@@ -304,10 +308,12 @@ export function applyAction(
     });
     room.questionsThisTurn = (room.questionsThisTurn ?? 0) + 1;
     room.waitingForAnswer = true;
+    room.currentQuestion = text;
+    room.votes = {};
     return { ok: true };
   }
 
-  // ──── ANSWER ────
+  // ──── ANSWER (vote system: each player votes) ────
   if (payload.type === "answer") {
     if (!room.waitingForAnswer) {
       return { ok: false, error: "ยังไม่มีคำถาม — รอจนกว่าจะมีการถาม" };
@@ -316,15 +322,53 @@ export function applyAction(
     if (playerId === currentTurnId) {
       return { ok: false, error: "คุณถามเอง ตอบเองไม่ได้" };
     }
-    pushChat(room, {
-      fromId: player.id,
-      fromName: player.name,
-      type: "answer",
-      text: payload.text,
-    });
-    room.waitingForAnswer = false;
-    // Turn STAYS with current player — they can ask again or guess/pass
-    // isRoundOver check is skipped here since no guessedThisRound changed
+    // Players who already guessed or are spectators can't vote
+    if (player.guessedCorrectly || player.isSpectator) {
+      return { ok: false, error: "คุณไม่สามารถตอบได้" };
+    }
+    // Already voted?
+    if (room.votes[playerId]) {
+      return { ok: false, error: "คุณตอบไปแล้ว" };
+    }
+    // Record vote
+    room.votes[playerId] = payload.text;
+
+    // Check if all eligible voters have voted
+    const eligibleVoters = room.players.filter(p =>
+      !p.isSpectator && !p.guessedCorrectly && p.id !== currentTurnId
+    );
+    const allVoted = eligibleVoters.every(p => !!room.votes[p.id]);
+
+    if (allVoted) {
+      // Summarize votes into chat
+      const voteLines = eligibleVoters.map(p => {
+        const v = room.votes[p.id];
+        const emoji = v === "yes" ? "✅" : v === "no" ? "❌" : "🤔";
+        const label = v === "yes" ? "ใช่" : v === "no" ? "ไม่ใช่" : "อาจจะ";
+        return `${p.name}: ${emoji} ${label}`;
+      }).join(" | ");
+
+      // Count majority
+      const yesCount = eligibleVoters.filter(p => room.votes[p.id] === "yes").length;
+      const noCount = eligibleVoters.filter(p => room.votes[p.id] === "no").length;
+      const maybeCount = eligibleVoters.filter(p => room.votes[p.id] === "maybe").length;
+      const total = eligibleVoters.length;
+      let summary = "";
+      if (yesCount > noCount && yesCount >= maybeCount) summary = `✅ ใช่ (${yesCount}/${total})`;
+      else if (noCount > yesCount && noCount >= maybeCount) summary = `❌ ไม่ใช่ (${noCount}/${total})`;
+      else summary = `🤔 ไม่แน่ใจ (${yesCount}/${total})`;
+
+      pushChat(room, {
+        fromId: null,
+        fromName: "ระบบ",
+        type: "answer",
+        text: `${voteLines}\n${summary}`,
+      });
+
+      room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
+      room.currentQuestion = null;
+    }
+
     return { ok: true };
   }
 
@@ -338,7 +382,7 @@ export function applyAction(
     }
     // If someone guesses while we're waiting for an answer, abandon the pending question
     if (room.waitingForAnswer) {
-      room.waitingForAnswer = false;
+      room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
       pushChat(room, {
         fromId: null, fromName: "ระบบ", type: "system",
         text: `⚠️ ${player.name} ทาย — ยกเลิกคำถามที่ค้างอยู่`,
@@ -412,7 +456,7 @@ export function applyAction(
       return { ok: false, error: "คุณใช้สิทธิ์ไปแล้ว" };
     }
     if (room.waitingForAnswer) {
-      room.waitingForAnswer = false;
+      room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
       pushChat(room, {
         fromId: null, fromName: "ระบบ", type: "system",
         text: `➡️ ${player.name} ผ่าน — ยกเลิกคำถามที่ค้างอยู่`,
@@ -438,7 +482,7 @@ export function applyAction(
 
 function endRound(room: RoomState) {
   room.status = "ended";
-  room.waitingForAnswer = false;
+  room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
   // reveal all answers
   pushChat(room, {
     fromId: null,
@@ -466,7 +510,7 @@ export function startNextRound(room: RoomState): { ok: boolean; error?: string }
   room.round += 1;
   room.finishers = [];
   room.currentTurnIdx = 0;
-  room.waitingForAnswer = false;
+  room.waitingForAnswer = false; room.currentQuestion = null; room.votes = {};
   for (const p of room.players) {
     p.guessedCorrectly = false;
     p.guessedThisRound = false;

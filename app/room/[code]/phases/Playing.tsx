@@ -41,7 +41,7 @@ const CountdownTimer = memo(function CountdownTimer({
   return (
     <div className="mb-3 rounded-xl overflow-hidden" style={{ border: `1px solid ${isDanger ? "rgba(251,113,133,0.4)" : isUrgent ? "rgba(251,191,36,0.4)" : "rgba(255,255,255,0.07)"}` }}>
       <div className="flex items-center justify-between px-3 py-2">
-        <span className="text-xs font-bold" style={{ color: isDanger ? "#fb7185" : isUrgent ? "#fbbf24" : "#64748b" }}>
+        <span className="text-xs font-bold" style={{ color: isDanger ? "#fb7185" : isUrgent ? "#fbbf24" : "#94a3b8" }}>
           {isDanger ? "🔴" : isUrgent ? "⚠️" : "⏱️"} เวลา
         </span>
         <span className="text-sm font-black tabular-nums" style={{ color: isDanger ? "#fb7185" : isUrgent ? "#fbbf24" : "#94a3b8" }}>
@@ -98,7 +98,14 @@ export function Playing({
   const canAnswer =
     !isMyTurn &&
     room.waitingForAnswer &&
-    !!(me && !me.guessedCorrectly);
+    !!(me && !me.guessedCorrectly && !me.isSpectator) &&
+    !room.votes[playerId]; // haven't voted yet
+
+  // Vote tracking
+  const myVote = room.votes[playerId] ?? null;
+  const eligibleVoters = room.players.filter(p =>
+    !p.isSpectator && !p.guessedCorrectly && p.id !== room.currentTurnId
+  );
 
   // Last question in chat (shown as context when waiting for answer)
   const lastQuestion = [...room.chat]
@@ -168,7 +175,7 @@ export function Playing({
   const spectators = room.players.filter(p => p.isSpectator);
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-4 animate-fade-in text-[#2D3436]">
+    <div className="w-full max-w-7xl mx-auto space-y-4 animate-fade-in text-[#e2e8f0]">
       <style>{`
         @keyframes pop { 0% {transform: scale(0.95)} 50% {transform: scale(1.05)} 100% {transform: scale(1)} }
         @keyframes bounceGlow { 0%,100%{box-shadow:0 0 0 4px #FF8C42, 0 8px 16px rgba(255,140,66,0.2)} 50%{box-shadow:0 0 0 6px #FF8C42, 0 12px 24px rgba(255,140,66,0.4)} }
@@ -228,7 +235,7 @@ export function Playing({
                 {isCurrent && <span className="ml-1">🎯</span>}
               </div>
               {/* Score */}
-              <div className="text-xs font-black mt-1 bg-slate-100 rounded-full px-2 py-0.5" style={{ color: "#4DACF7" }}>
+              <div className="text-xs font-black mt-1 bg-[rgba(37,21,69,0.4)] rounded-full px-2 py-0.5" style={{ color: "#4DACF7" }}>
                 {p.score} pt
               </div>
             </div>
@@ -270,14 +277,72 @@ export function Playing({
             )}
           </div>
 
-          {/* Waiting for answer banner */}
-          {room.waitingForAnswer && lastQuestion && !isMyTurn && (
-            <div className="p-4 rounded-2xl" style={{ ...cartoonCard, border: "2px solid #FFD43B", background: "rgba(255,212,59,0.08)" }}>
-              <div className="text-xs font-black mb-2" style={{ color: "#F59F00" }}>
-                ⏳ รอคำตอบ
+          {/* ── VOTING PANEL — shows when a question is pending ── */}
+          {room.waitingForAnswer && room.currentQuestion && (
+            <div className="p-5 rounded-2xl animate-slide-up" style={{ ...cartoonCard, border: "2px solid rgba(77,172,247,0.4)", background: "rgba(77,172,247,0.08)" }}>
+              <div className="text-xs font-black mb-1" style={{ color: "#74C0FC" }}>
+                ❓ คำถามจาก {room.players.find(p => p.id === room.currentTurnId)?.name}
               </div>
-              <div className="text-lg font-black" style={{ color: "#e2e8f0" }}>❓ {lastQuestion.text}</div>
-              <div className="text-xs mt-2 font-semibold" style={{ color: "#a89cc8" }}>ถามโดย {lastQuestion.fromName}</div>
+              <div className="text-lg font-black mb-4" style={{ color: "#ffffff" }}>
+                {room.currentQuestion}
+              </div>
+
+              {/* Show all voters and their status */}
+              <div className="space-y-2 mb-4">
+                {eligibleVoters.map(p => {
+                  const vote = room.votes[p.id];
+                  return (
+                    <div key={p.id} className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: vote ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)" }}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black" style={{ background: vote ? (vote === "yes" ? "rgba(81,207,102,0.2)" : vote === "no" ? "rgba(255,107,107,0.2)" : "rgba(255,212,59,0.2)") : "rgba(151,117,250,0.15)", color: vote ? "#fff" : "#a89cc8" }}>
+                        {vote ? (vote === "yes" ? "✅" : vote === "no" ? "❌" : "🤔") : "⏳"}
+                      </div>
+                      <span className="font-bold text-sm" style={{ color: "#e2e8f0" }}>{p.name}</span>
+                      <span className="ml-auto text-xs font-bold" style={{ color: vote ? (vote === "yes" ? "#51CF66" : vote === "no" ? "#FF6B6B" : "#FFD43B") : "#7c6aab" }}>
+                        {vote ? (vote === "yes" ? "ใช่" : vote === "no" ? "ไม่ใช่" : "อาจจะ") : "รอตอบ..."}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Vote buttons — only if I can answer */}
+              {canAnswer && (
+                <div className="grid grid-cols-3 gap-3">
+                  {([
+                    { val: "yes" as const, label: "✅ ใช่", bg: "#51CF66", shadow: "#37B24D" },
+                    { val: "no" as const, label: "❌ ไม่ใช่", bg: "#FF6B6B", shadow: "#F03E3E" },
+                    { val: "maybe" as const, label: "🤔 อาจจะ", bg: "#FFD43B", shadow: "#F59F00" },
+                  ] as const).map(({ val, label, bg, shadow }) => (
+                    <button
+                      key={val}
+                      id={`btn-vote-${val}`}
+                      onClick={() => handleAnswer(val)}
+                      disabled={loading}
+                      className="py-3 rounded-xl text-sm font-black transition-all active:scale-95 disabled:opacity-50"
+                      style={{ background: bg, color: "#1a0a2e", boxShadow: `0 4px 0 ${shadow}`, border: "none" }}
+                      onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(4px)"; e.currentTarget.style.boxShadow = "none"; }}
+                      onMouseUp={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 4px 0 ${shadow}`; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 4px 0 ${shadow}`; }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Already voted indicator */}
+              {myVote && !isMyTurn && (
+                <div className="text-center py-2 text-sm font-bold" style={{ color: "#51CF66" }}>
+                  ✅ คุณตอบแล้ว — รอคนอื่น
+                </div>
+              )}
+
+              {/* Asker sees voting progress */}
+              {isMyTurn && (
+                <div className="text-center py-2 text-sm font-bold" style={{ color: "#74C0FC" }}>
+                  ⏳ รอทุกคนตอบ ({Object.keys(room.votes).length}/{eligibleVoters.length})
+                </div>
+              )}
             </div>
           )}
 
@@ -289,99 +354,18 @@ export function Playing({
               <div className="text-4xl mb-3">
                 {me?.guessedCorrectly ? "🎉" : "😴"}
               </div>
-              <p className="text-base font-bold text-slate-500">
+              <p className="text-base font-bold text-[#a89cc8]">
                 {me?.guessedCorrectly
                   ? "คุณทายถูกแล้ว! รอจบรอบ"
                   : "คุณทายไปแล้วในรอบนี้ รอจบรอบ"}
               </p>
             </div>
-          ) : /* Not my turn — show answer buttons if waiting */
-          canAnswer ? (
-            <div className="animate-slide-up">
-              <p className="text-sm font-black mb-3" style={{ color: "#4DACF7" }}>
-                ตอบคำถาม
-              </p>
-              <div className="grid grid-cols-3 gap-3">
-                {([
-                  { val: "yes" as const, label: "✅ ใช่", color: "rgba(37,21,69,0.6)", bg: "#51CF66", shadow: "#37B24D" },
-                  { val: "no" as const, label: "❌ ไม่ใช่", color: "rgba(37,21,69,0.6)", bg: "#FF6B6B", shadow: "#F03E3E" },
-                  { val: "maybe" as const, label: "🤔 อาจจะ", color: "#e2e8f0", bg: "#FFD43B", shadow: "#F59F00" },
-                ] as const).map(({ val, label, color, bg, shadow }) => (
-                  <button
-                    key={val}
-                    id={`btn-answer-${val}`}
-                    onClick={() => handleAnswer(val)}
-                    disabled={loading}
-                    className="py-3 rounded-full text-sm font-black transition-all duration-150 disabled:opacity-50"
-                    style={{
-                      background: bg,
-                      color,
-                      border: "none",
-                      boxShadow: aiResult?.answer === val ? `0 6px 0 ${shadow}, 0 0 15px ${bg}` : `0 4px 0 ${shadow}`,
-                      transform: aiResult?.answer === val ? "scale(1.05) translateY(-2px)" : "none",
-                    }}
-                    onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(4px)"; e.currentTarget.style.boxShadow = "none"; }}
-                    onMouseUp={(e) => { e.currentTarget.style.transform = aiResult?.answer === val ? "scale(1.05) translateY(-2px)" : ""; e.currentTarget.style.boxShadow = aiResult?.answer === val ? `0 6px 0 ${shadow}, 0 0 15px ${bg}` : `0 4px 0 ${shadow}`; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = aiResult?.answer === val ? "scale(1.05) translateY(-2px)" : ""; e.currentTarget.style.boxShadow = aiResult?.answer === val ? `0 6px 0 ${shadow}, 0 0 15px ${bg}` : `0 4px 0 ${shadow}`; }}
-                  >
-                    {label}
-                    {aiResult?.answer === val && (
-                      <span className="ml-1 text-[10px] opacity-90 block mt-1">← AI แนะนำ</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              {/* AI Help button */}
-              <button
-                id="btn-ai-answer"
-                onClick={handleAIAnswer}
-                disabled={aiLoading || loading}
-                className="mt-4 w-full py-3 rounded-full text-sm font-bold transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{
-                  background: "rgba(77,172,247,0.12)",
-                  border: "2px solid #74C0FC",
-                  color: "#1C7ED6",
-                  boxShadow: "0 4px 0 #74C0FC",
-                }}
-                onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(4px)"; e.currentTarget.style.boxShadow = "none"; }}
-                onMouseUp={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 0 #74C0FC"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 0 #74C0FC"; }}
-              >
-                {aiLoading ? (
-                  <><span className="w-4 h-4 rounded-full border-2 border-[#1C7ED6] border-t-transparent animate-spin" />กำลังถาม AI...</>
-                ) : (
-                  <>🤖 ไม่รู้? ถาม AI ช่วยตอบ</>
-                )}
-              </button>
-
-              {/* AI result card */}
-              {aiResult && (
-                <div
-                  className="mt-3 rounded-xl p-4 animate-slide-up"
-                  style={{ background: "rgba(77,172,247,0.12)", border: "2px solid #74C0FC" }}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl flex-shrink-0">🤖</span>
-                    <div>
-                      <p className="text-sm font-black text-[#1C7ED6] mb-1">
-                        AI แนะนำ:{" "}
-                        <span style={{ color: aiResult.answer === "yes" ? "#2B8A3E" : aiResult.answer === "no" ? "#C92A2A" : "#B08800" }}>
-                          {aiResult.answer === "yes" ? "✅ ใช่" : aiResult.answer === "no" ? "❌ ไม่ใช่" : "🤔 อาจจะ"}
-                        </span>
-                      </p>
-                      <p className="text-xs text-[#2D3436] font-medium leading-relaxed">{aiResult.reason}</p>
-                      <p className="text-[10px] text-[#636E72] mt-2 font-bold">กดปุ่มด้านบนเพื่อยืนยันคำตอบ</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : isMyTurn && !room.waitingForAnswer ? (
+          ) : /* Not my turn or waiting */
+          isMyTurn && !room.waitingForAnswer ? (
             /* My turn — ask or guess */
             <div className="animate-slide-up">
               <div
-                className="flex gap-2 mb-4 bg-slate-100 p-1.5 rounded-full"
+                className="flex gap-2 mb-4 bg-[rgba(37,21,69,0.4)] p-1.5 rounded-full"
               >
                 {(["ask", "guess"] as const).map((m) => (
                   <button
@@ -411,7 +395,7 @@ export function Playing({
                   placeholder={
                     mode === "ask" ? "พิมพ์คำถาม yes/no..." : "ทายว่าคุณคือใคร..."
                   }
-                  className="flex-1 rounded-full px-4 py-3 text-sm text-[#2D3436] font-medium outline-none transition-all duration-200"
+                  className="flex-1 rounded-full px-4 py-3 text-sm text-[#e2e8f0] font-medium outline-none transition-all duration-200"
                   style={{
                     background: "rgba(37,21,69,0.6)",
                     border: "2px solid rgba(151,117,250,0.2)",
@@ -443,11 +427,40 @@ export function Playing({
               {mode === "guess" && (
                 <p
                   className="mt-3 text-xs font-bold text-center rounded-xl px-3 py-2 animate-fade-in"
-                  style={{ background: "rgba(255,107,107,0.1)", color: "#E03131", border: "2px dashed #FF8787" }}
+                  style={{ background: "rgba(255,107,107,0.1)", color: "#FF8787", border: "2px dashed #FF8787" }}
                 >
                   ⚠ ถ้าทาย จะหมดสิทธิ์ถามในรอบนี้ทันที
                 </p>
               )}
+
+              {/* Pass button */}
+              <button
+                id="btn-pass"
+                onClick={async () => {
+                  setLoading(true);
+                  setError("");
+                  try {
+                    await sendAction(room.code, playerId, { type: "pass" });
+                    onRefresh();
+                  } catch (e: unknown) {
+                    setError(e instanceof Error ? e.message : "error");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="mt-3 w-full py-3 rounded-full text-sm font-bold transition-all disabled:opacity-50"
+                style={{
+                  background: "rgba(151,117,250,0.15)",
+                  border: "2px solid rgba(151,117,250,0.3)",
+                  color: "#c4b5fd",
+                }}
+                onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(2px)"; }}
+                onMouseUp={(e) => { e.currentTarget.style.transform = ""; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
+              >
+                ➡️ ผ่าน (ข้ามตา)
+              </button>
             </div>
           ) : (
             /* Not my turn, not waiting — just wait */
@@ -535,7 +548,7 @@ function ChatBubble({
     if (msg.type === "question") {
       return {
         background: isMe ? "rgba(77,172,247,0.2)" : "rgba(77,172,247,0.12)",
-        color: "#1C7ED6",
+        color: "#74C0FC",
         border: `2px solid ${isMe ? "#74C0FC" : "#A5D8FF"}`,
         boxShadow: `0 2px 0 ${isMe ? "#74C0FC" : "#A5D8FF"}`
       };

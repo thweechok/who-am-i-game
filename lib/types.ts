@@ -52,6 +52,10 @@ export interface RoomState {
   /** true when someone has asked a question and we are waiting for an answer
    *  before advancing to the next turn */
   waitingForAnswer: boolean;
+  /** The current pending question text */
+  currentQuestion: string | null;
+  /** Votes from each player on the current question: playerId -> vote */
+  votes: Record<string, "yes" | "no" | "maybe">;
   difficulty: "easy" | "medium" | "hard";
   maxQuestionsPerTurn: number;
   questionsThisTurn: number;
@@ -85,6 +89,8 @@ export interface PublicRoomState {
   finishers: string[];
   /** mirrors RoomState.waitingForAnswer — lets clients show answer buttons */
   waitingForAnswer: boolean;
+  currentQuestion: string | null;
+  votes: Record<string, "yes" | "no" | "maybe">;
   difficulty: "easy" | "medium" | "hard";
   maxQuestionsPerTurn: number;
   questionsThisTurn: number;
